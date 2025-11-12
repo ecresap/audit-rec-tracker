@@ -75,7 +75,7 @@
     .span-4{grid-column: span 4}
     .span-3{grid-column: span 3}
     @media (max-width: 1024px){
-      .span-8,.span-6,.span-4,.span-3{grid-column:span 12}
+      .span-8,.span-6,.span-4,.span-3,.span-12{grid-column:span 12}
     }
 
     .field{display:flex; flex-direction:column; gap:8px; margin-bottom:14px}
@@ -273,40 +273,42 @@
         <div class="card span-12">
           <h3 style="margin:4px 0 14px">Add Recommendation to Existing Audit (Full Metadata)</h3>
           <div class="grid">
-            <div class="span-6">
+            <div class="span-12">
               <div class="field">
                 <label for="existingAuditSelect">Select Audit</label>
                 <select id="existingAuditSelect"></select>
               </div>
             </div>
-            <div class="span-6"></div>
 
-            <div class="span-6">
+            <div class="span-12">
               <div class="field">
                 <label for="newRecTitle">Title</label>
                 <input id="newRecTitle" placeholder="e.g., Implement 3-way match control" />
               </div>
             </div>
-            <div class="span-6">
+
+            <div class="span-12">
               <div class="field">
                 <label for="newRecDesc">Description</label>
                 <textarea id="newRecDesc" placeholder="More detailed description of the recommendation"></textarea>
               </div>
             </div>
 
-            <div class="span-4">
+            <div class="span-12">
               <div class="field">
                 <label for="newRecOwner">Owner</label>
                 <input id="newRecOwner" placeholder="e.g., AP Manager" />
               </div>
             </div>
-            <div class="span-4">
+
+            <div class="span-12">
               <div class="field">
                 <label for="newRecDue">Due Date</label>
                 <input id="newRecDue" type="date" />
               </div>
             </div>
-            <div class="span-4">
+
+            <div class="span-12">
               <div class="field">
                 <label for="newRecStatus">Status</label>
                 <select id="newRecStatus">
@@ -317,7 +319,7 @@
               </div>
             </div>
 
-            <div class="span-4">
+            <div class="span-12">
               <div class="field">
                 <label for="newRecRisk">Risk Rating</label>
                 <select id="newRecRisk">
@@ -329,7 +331,8 @@
                 </select>
               </div>
             </div>
-            <div class="span-4">
+
+            <div class="span-12">
               <div class="field">
                 <label for="newRecLikelihood">Likelihood</label>
                 <select id="newRecLikelihood">
@@ -340,7 +343,8 @@
                 </select>
               </div>
             </div>
-            <div class="span-4">
+
+            <div class="span-12">
               <div class="field">
                 <label for="newRecImpact">Impact</label>
                 <select id="newRecImpact">
@@ -353,39 +357,42 @@
               </div>
             </div>
 
-            <div class="span-6">
+            <div class="span-12">
               <div class="field">
                 <label for="newRecRootCause">Root Cause</label>
                 <textarea id="newRecRootCause" placeholder="e.g., Lack of automated 3-way match control"></textarea>
               </div>
             </div>
-            <div class="span-6">
+
+            <div class="span-12">
               <div class="field">
                 <label for="newRecControlId">Control ID Linkage</label>
                 <input id="newRecControlId" placeholder="e.g., P2P-CTRL-001" />
               </div>
             </div>
 
-            <div class="span-6">
+            <div class="span-12">
               <div class="field">
                 <label for="newRecRegMap">Regulatory Mapping</label>
                 <input id="newRecRegMap" placeholder="e.g., SOX 404, COSO, ISO 27001" />
               </div>
             </div>
-            <div class="span-6">
+
+            <div class="span-12">
               <div class="field">
                 <label for="newRecProcSys">Related Processes/Systems</label>
                 <input id="newRecProcSys" placeholder="e.g., P2P, SAP, Coupa" />
               </div>
             </div>
 
-            <div class="span-4">
+            <div class="span-12">
               <div class="field">
                 <label for="newRecGeo">Geography</label>
                 <input id="newRecGeo" placeholder="e.g., US, EMEA, APAC" />
               </div>
             </div>
-            <div class="span-4">
+
+            <div class="span-12">
               <div class="field">
                 <label for="newRecBU">Business Unit</label>
                 <input id="newRecBU" placeholder="e.g., Client Products Group" />
