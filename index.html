@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Audit Recommendation Tracker</title>
+  <!-- Chart.js for charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root{
+      --bg: #f7f7f4;           /* off white */
+      --card: #ffffff;
+      --ink: #1f2937;          /* gray-800 */
+      --muted:#6b7280;         /* gray-500 */
+      --accent:#3b82f6;        /* blue-500 */
+      --accent-600:#2563eb;    /* blue-600 */
+      --good:#10b981;          /* emerald-500 */
+      --warn:#f59e0b;          /* amber-500 */
+      --bad:#ef4444;           /* red-500 */
+      --shadow: 0 10px 24px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.06);
+      --shadow-soft: 0 6px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.05);
+      --radius: 16px;
+      --radius-sm: 12px;
+      --radius-xs: 10px;
+      --transition: 180ms cubic-bezier(.2,.8,.2,1);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: var(--bg); color: var(--ink);
+    }
+    .container{max-width:1200px; margin: 0 auto; padding: 24px;}
+    header{
+      position: sticky; top:0; z-index: 50; backdrop-filter: blur(8px);
+      background: rgba(247,247,244,0.8); border-bottom: 1px solid #eee;
+    }
+    .brand{display:flex; gap:12px; align-items:center; font-weight:700; font-size:20px}
+    .nav{
+      display:flex; gap:10px; flex-wrap: wrap; align-items:center;
+    }
+    .row{display:flex; gap:16px; flex-wrap:wrap; align-items:center; justify-content:space-between}
+    .btn{
+      appearance:none; border:none; cursor:pointer; padding:12px 16px; border-radius: var(--radius-sm);
+      background: var(--card); color: var(--ink); box-shadow: var(--shadow-soft);
+      transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+    }
+    .btn:hover{ transform: translateY(-2px); box-shadow: var(--shadow); }
+    .btn:active{ transform: translateY(0); }
+    .btn.primary{ background: linear-gradient(180deg, var(--accent), var(--accent-600)); color:#fff; }
+    .btn.good{ background: linear-gradient(180deg, var(--good), #059669); color:#fff; }
+    .btn.warn{ background: linear-gradient(180deg, var(--warn), #d97706); color:#fff; }
+    .btn.bad{ background: linear-gradient(180deg, var(--bad), #b91c1c); color:#fff; }
+
+    .card{
+      background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+      padding: 18px; transition: transform var(--transition), box-shadow var(--transition);
+    }
+    .card:hover{ transform: translateY(-2px); box-shadow: 0 14px 32px rgba(0,0,0,.10), 0 3px 10px rgba(0,0,0,.08); }
+
+    .chips{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    .chip{padding:4px 10px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size:12px}
+
+    .kpi{
+      display:grid; grid-template-columns: repeat(12, 1fr); gap:16px; margin-top:16px;
+    }
+    .kpi .card{ padding:20px }
+    .kpi .value{ font-size:32px; font-weight:800; letter-spacing:.5px }
+    .kpi .label{ color: var(--muted); font-size:13px }
+
+    .grid{ display:grid; grid-template-columns: repeat(12, 1fr); gap:16px; }
+    .span-12{grid-column: span 12}
+    .span-8{grid-column: span 8}
+    .span-4{grid-column: span 4}
+    @media (max-width: 1024px){ .span-8{grid-column:span 12} .span-4{grid-column:span 12} }
+
+    .field{display:flex; flex-direction:column; gap:8px; margin-bottom:14px}
+    label{font-size:13px; color: var(--muted)}
+    input, select, textarea{
+      width:100%; padding:12px 14px; border-radius: var(--radius-xs); border: 1px solid #e5e7eb; background:#fff;
+      box-shadow: inset 0 1px 0 rgba(0,0,0,0.02);
+      transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+    }
+    input:focus, select:focus, textarea:focus{ outline:none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.15) }
+
+    .toolbar{display:flex; gap:10px; align-items:center; justify-content:space-between; margin: 18px 0; flex-wrap: wrap}
+    .search{ flex:1; min-width: 220px }
+
+    .list{ display:grid; gap:12px }
+    .audit-card{ padding:0 }
+    .audit-head{ display:flex; justify-content:space-between; align-items:center; padding:16px 18px; border-bottom:1px solid #eee }
+    .audit-body{ padding:12px 18px }
+
+    .table{ width:100%; border-collapse: collapse }
+    .table th, .table td{
+      padding:10px 8px; border-bottom: 1px dashed #e5e7eb; text-align:left; font-size:14px
+    }
+    .table th{ color: var(--muted); font-weight:600; font-size:12px; text-transform: uppercase; letter-spacing:.08em }
+
+    .status{ font-size:12px; padding:4px 8px; border-radius: 999px; display:inline-block; }
+    .status.overdue{ background:#fee2e2; color:#991b1b }
+    .status.soon{ background:#ffedd5; color:#9a3412 }
+    .status.ok{ background:#e5f9ef; color:#065f46 }
+
+    .hidden{ display:none !important }
+    .muted{ color: var(--muted) }
+    .section{ display:none }
+    .section.active{ display:block }
+
+    .footer{ color: var(--muted); font-size:12px; text-align:center; padding:18px 0 36px }
+
+    /* Chart container fixed to keep one-screen height */
+    .chart-wrap{ height: 360px; max-height: 65vh; }
+    #barChart{ width:100%; height:100% !important; display:block }
+
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container row">
+      <div class="brand">📊 Audit Recommendation Tracker</div>
+      <nav class="nav">
+        <button class="btn" data-nav="dashboard">Dashboard</button>
+        <button class="btn" data-nav="input">Input</button>
+        <button class="btn" data-nav="list">Recommendation List</button>
+        <button class="btn" id="exportBtn" title="Export data as JSON">Export</button>
+        <label class="btn" for="importFile" title="Import data from JSON" style="cursor:pointer">Import<input id="importFile" type="file" accept="application/json" style="display:none"></label>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="section active">
+      <div class="chips" style="margin-top:8px">
+        <span class="chip">Off-white UI</span>
+        <span class="chip">Raised cards</span>
+        <span class="chip">Hover micro-movements</span>
+      </div>
+
+      <div class="kpi">
+        <div class="card span-4">
+          <div class="label">Due within 7 days</div>
+          <div id="kpiDueSoon" class="value">0</div>
+        </div>
+        <div class="card span-4">
+          <div class="label">Overdue</div>
+          <div id="kpiOverdue" class="value">0</div>
+        </div>
+        <div class="card span-4">
+          <div class="label">Total Recommendations</div>
+          <div id="kpiTotal" class="value">0</div>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:16px">
+        <div class="card span-8">
+          <h3 style="margin:4px 0 14px">Timeline Outlook</h3>
+          <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+        </div>
+        <div class="card span-4">
+          <h3 style="margin:4px 0 14px">Urgent Queue</h3>
+          <table class="table" id="urgentTable">
+            <thead>
+              <tr><th>Audit</th><th>Recommendation</th><th>Due</th><th>Status</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- INPUT -->
+    <section id="input" class="section">
+      <div class="grid">
+        <div class="card span-12">
+          <h3 style="margin:4px 0 14px">Add New Audit & Multiple Recommendations</h3>
+          <div class="grid">
+            <!-- Full-width Number then Name beneath, both expanded -->
+            <div class="span-12">
+              <div class="field">
+                <label for="auditNumber">Audit Number</label>
+                <input id="auditNumber" placeholder="e.g., 2025-012" />
+              </div>
+            </div>
+            <div class="span-12">
+              <div class="field">
+                <label for="auditName">Audit Name</label>
+                <input id="auditName" placeholder="e.g., Procure-to-Pay Review" />
+              </div>
+            </div>
+
+            <div class="span-12">
+              <div class="toolbar">
+                <div class="muted">Add as many recommendation rows as you need.</div>
+                <button class="btn" id="addRowBtn">+ Add Row</button>
+              </div>
+              <div class="card" style="padding:0">
+                <table class="table" id="recTable">
+                  <thead>
+                    <tr><th style="width:34%">Description</th><th style="width:22%">Owner</th><th style="width:18%">Due Date</th><th style="width:10%">Status</th><th style="width:10%">Remove</th></tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <div style="display:flex; gap:10px; margin-top:14px">
+                <button class="btn primary" id="saveAuditBtn">Save Audit</button>
+                <button class="btn" id="clearNewAuditForm">Clear</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card span-12">
+          <h3 style="margin:4px 0 14px">Add Recommendation to Existing Audit</h3>
+          <div class="grid">
+            <div class="span-5">
+              <div class="field">
+                <label for="existingAuditSelect">Select Audit</label>
+                <select id="existingAuditSelect"></select>
+              </div>
+            </div>
+            <div class="span-7"></div>
+            <div class="span-6">
+              <div class="field">
+                <label for="newRecDesc">Description</label>
+                <input id="newRecDesc" placeholder="e.g., Implement 3-way match control" />
+              </div>
+            </div>
+            <div class="span-3">
+              <div class="field">
+                <label for="newRecOwner">Owner</label>
+                <input id="newRecOwner" placeholder="e.g., AP Manager" />
+              </div>
+            </div>
+            <div class="span-3">
+              <div class="field">
+                <label for="newRecDue">Due Date</label>
+                <input id="newRecDue" type="date" />
+              </div>
+            </div>
+            <div class="span-3">
+              <div class="field">
+                <label for="newRecStatus">Status</label>
+                <select id="newRecStatus">
+                  <option value="Open">Open</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Closed">Closed</option>
+                </select>
+              </div>
+            </div>
+            <div class="span-12">
+              <button class="btn primary" id="addToExistingBtn">Add to Audit</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIST -->
+    <section id="list" class="section">
+      <div class="toolbar">
+        <input id="search" class="search" placeholder="Search by audit number, name, owner, recommendation…" />
+        <div style="display:flex; gap:8px">
+          <select id="statusFilter">
+            <option value="">All Statuses</option>
+            <option>Open</option>
+            <option>In Progress</option>
+            <option>Closed</option>
+          </select>
+          <button class="btn" id="clearFilters">Clear Filters</button>
+        </div>
+      </div>
+
+      <div id="listContainer" class="list"></div>
+    </section>
+  </main>
+
+  <div class="footer">Data is stored locally in your browser (localStorage). Use Export/Import to back up or move between devices.</div>
+
+  <script>
+    // -----------------------
+    // Basic Data Layer
+    // -----------------------
+    const STORAGE_KEY = 'auditTrackerData_v1';
+
+    /**
+     * Shape:
+     * {
+     *   audits: [
+     *     { id, auditNumber, auditName, recommendations: [ { id, description, owner, dueDate, status } ] }
+     *   ]
+     * }
+     */
+    const uid = () => Math.random().toString(36).slice(2,9)+Date.now().toString(36);
+
+    function load(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return { audits: [] };
+        const data = JSON.parse(raw);
+        if(!data.audits) data.audits = [];
+        return data;
+      }catch(e){ console.error('Load failed', e); return { audits: [] } }
+    }
+    function save(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+    let state = load();
+
+    // -----------------------
+    // Navigation
+    // -----------------------
+    const sections = {
+      dashboard: document.getElementById('dashboard'),
+      input: document.getElementById('input'),
+      list: document.getElementById('list'),
+    };
+    document.querySelectorAll('[data-nav]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const dest = btn.getAttribute('data-nav');
+        Object.values(sections).forEach(s => s.classList.remove('active'));
+        sections[dest].classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        refreshAll();
+      })
+    });
+
+    // -----------------------
+    // Input: New Audit + Rows
+    // -----------------------
+    const recTableBody = document.querySelector('#recTable tbody');
+    const addRowBtn = document.getElementById('addRowBtn');
+    const saveAuditBtn = document.getElementById('saveAuditBtn');
+    const clearNewAuditForm = document.getElementById('clearNewAuditForm');
+
+    function addRecRow(pref={}){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input placeholder="Recommendation description" value="${pref.description||''}"></td>
+        <td><input placeholder="Owner" value="${pref.owner||''}"></td>
+        <td><input type="date" value="${pref.dueDate||''}"></td>
+        <td>
+          <select>
+            <option ${pref.status==='Open'?'selected':''}>Open</option>
+            <option ${pref.status==='In Progress'?'selected':''}>In Progress</option>
+            <option ${pref.status==='Closed'?'selected':''}>Closed</option>
+          </select>
+        </td>
+        <td><button class="btn bad" title="Remove row">✕</button></td>
+      `;
+      tr.querySelector('button').addEventListener('click', ()=>{ tr.remove(); });
+      recTableBody.appendChild(tr);
+    }
+
+    addRowBtn.addEventListener('click', ()=> addRecRow());
+
+    function clearNewAudit(){
+      document.getElementById('auditNumber').value = '';
+      document.getElementById('auditName').value = '';
+      recTableBody.innerHTML = '';
+    }
+
+    clearNewAuditForm.addEventListener('click', clearNewAudit);
+
+    saveAuditBtn.addEventListener('click', ()=>{
+      const auditNumber = document.getElementById('auditNumber').value.trim();
+      const auditName = document.getElementById('auditName').value.trim();
+      if(!auditNumber || !auditName){ alert('Please enter Audit Number and Audit Name.'); return; }
+
+      const rows = Array.from(recTableBody.querySelectorAll('tr'));
+      if(rows.length === 0){ if(!confirm('No recommendations added. Create audit with zero recommendations?')) return; }
+
+      const recommendations = rows.map(r=>{
+        const [descInput, ownerInput, dueInput, statusSel] = r.querySelectorAll('input, select');
+        return {
+          id: uid(),
+          description: descInput.value.trim(),
+          owner: ownerInput.value.trim(),
+          dueDate: dueInput.value || null,                // store raw YYYY-MM-DD (no TZ shift)
+          status: statusSel.value || 'Open'
+        }
+      }).filter(r=> r.description);
+
+      const audit = { id: uid(), auditNumber, auditName, recommendations };
+      state.audits.push(audit);
+      save(state);
+      clearNewAudit();
+      populateExistingAuditSelect();
+      refreshAll();
+      alert('Audit saved.');
+    });
+
+    // -----------------------
+    // Add to Existing Audit
+    // -----------------------
+    const existingAuditSelect = document.getElementById('existingAuditSelect');
+    const addToExistingBtn = document.getElementById('addToExistingBtn');
+
+    function populateExistingAuditSelect(){
+      const auditsSorted = [...state.audits].sort(sortAudit);
+      existingAuditSelect.innerHTML = auditsSorted.map(a=>`<option value="${a.id}">${a.auditNumber} — ${a.auditName}</option>`).join('');
+    }
+
+    addToExistingBtn.addEventListener('click', ()=>{
+      const aid = existingAuditSelect.value;
+      if(!aid){ alert('Please select an audit.'); return; }
+      const audit = state.audits.find(a=>a.id===aid);
+      if(!audit){ alert('Audit not found.'); return; }
+      const description = document.getElementById('newRecDesc').value.trim();
+      const owner = document.getElementById('newRecOwner').value.trim();
+      const dueDate = document.getElementById('newRecDue').value;  // raw YYYY-MM-DD
+      const status = document.getElementById('newRecStatus').value;
+      if(!description){ alert('Please enter a description.'); return; }
+      audit.recommendations.push({ id: uid(), description, owner, dueDate: dueDate||null, status });
+      save(state);
+      document.getElementById('newRecDesc').value = '';
+      document.getElementById('newRecOwner').value = '';
+      document.getElementById('newRecDue').value = '';
+      document.getElementById('newRecStatus').value = 'Open';
+      refreshAll();
+      alert('Recommendation added.');
+    });
+
+    // -----------------------
+    // Helpers
+    // -----------------------
+    function sortAudit(a,b){
+      const an = a.auditNumber || ''; const bn = b.auditNumber || '';
+      if(an === bn){ return (a.auditName||'').localeCompare(b.auditName||''); }
+      return an.localeCompare(bn, undefined, { numeric: true, sensitivity: 'base' });
+    }
+    function niceDate(d){
+      // d is stored as "YYYY-MM-DD". Show in a friendly local format without shifting days.
+      if(!d) return '';
+      const [y,m,day] = d.split('-').map(x=>parseInt(x,10));
+      // Create as local date by using Date(year, monthIndex, day)
+      const dt = new Date(y, (m-1), day);
+      return dt.toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' });
+    }
+    function escapeHtml(s){
+      return String(s).replace(/[&<>\"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+    }
+    function findAudit(aid){ return state.audits.find(a=>a.id===aid); }
+    function findRec(audit, rid){ return (audit.recommendations||[]).find(r=>r.id===rid); }
+    function updateRec(aid, rid, patch){
+      const audit = findAudit(aid); if(!audit) return;
+      const rec = findRec(audit, rid); if(!rec) return;
+      Object.assign(rec, patch);
+      save(state);
+    }
+
+    // -----------------------
+    // List + Search / Inline Edit & Status Change
+    // -----------------------
+    const listContainer = document.getElementById('listContainer');
+    const searchInput = document.getElementById('search');
+    const statusFilter = document.getElementById('statusFilter');
+    const clearFilters = document.getElementById('clearFilters');
+
+    function renderList(){
+      const q = (searchInput.value||'').toLowerCase();
+      const status = statusFilter.value;
+      const audits = [...state.audits].sort(sortAudit);
+      listContainer.innerHTML = '';
+
+      audits.forEach(audit=>{
+        const filteredRecs = (audit.recommendations||[]).filter(r=>{
+          const hay = `${audit.auditNumber} ${audit.auditName} ${r.description} ${r.owner}`.toLowerCase();
+          const matchQ = !q || hay.includes(q);
+          const matchS = !status || (r.status===status);
+          return matchQ && matchS;
+        });
+        if(q && filteredRecs.length===0) return;
+
+        const card = document.createElement('div');
+        card.className = 'card audit-card';
+        card.innerHTML = `
+          <div class="audit-head">
+            <div>
+              <div style="font-weight:700">${audit.auditNumber}</div>
+              <div class="muted">${audit.auditName}</div>
+            </div>
+            <div class="muted">${(audit.recommendations||[]).length} recommendation(s)</div>
+          </div>
+          <div class="audit-body">
+            <table class="table">
+              <thead><tr><th>Description</th><th>Owner</th><th>Due</th><th>Status</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        `;
+        const tbody = card.querySelector('tbody');
+        const recs = filteredRecs.length ? filteredRecs : (audit.recommendations||[]);
+        recs.forEach(r=>{
+          const tr = document.createElement('tr');
+          tr.dataset.auditId = audit.id; tr.dataset.recId = r.id;
+          tr.innerHTML = `
+            <td class="desc">${escapeHtml(r.description||'')}</td>
+            <td class="owner">${escapeHtml(r.owner||'')}</td>
+            <td class="due">${r.dueDate ? niceDate(r.dueDate) : '<span class="muted">—</span>'}</td>
+            <td class="statusCell">
+              <select class="status-inline">
+                <option ${r.status==='Open'?'selected':''}>Open</option>
+                <option ${r.status==='In Progress'?'selected':''}>In Progress</option>
+                <option ${r.status==='Closed'?'selected':''}>Closed</option>
+              </select>
+            </td>
+            <td style="text-align:right">
+              <button class="btn editBtn" title="Edit">Edit</button>
+              <button class="btn bad deleteBtn" title="Delete">Delete</button>
+            </td>
+          `;
+
+          // Status dropdown change (persist immediately)
+          tr.querySelector('.status-inline').addEventListener('change', (e)=>{
+            updateRec(audit.id, r.id, { status: e.target.value });
+            refreshAll();
+          });
+
+          // Delete (works)
+          tr.querySelector('.deleteBtn').addEventListener('click', ()=>{
+            if(confirm('Delete this recommendation?')){
+              const a = findAudit(audit.id);
+              a.recommendations = (a.recommendations||[]).filter(x=>x.id!==r.id);
+              save(state); refreshAll();
+            }
+          });
+
+          // Edit inline (works; date saved exactly as selected)
+          tr.querySelector('.editBtn').addEventListener('click', ()=>{
+            enterEditMode(tr, audit.id, r.id);
+          });
+
+          tbody.appendChild(tr);
+        });
+
+        listContainer.appendChild(card);
+      });
+    }
+
+    function enterEditMode(tr, aid, rid){
+      const audit = findAudit(aid); const rec = findRec(audit, rid);
+      if(!rec) return;
+      const descTd = tr.querySelector('.desc');
+      const ownerTd = tr.querySelector('.owner');
+      const dueTd = tr.querySelector('.due');
+      const actionTd = tr.lastElementChild;
+
+      // Build raw date string safely for input (YYYY-MM-DD)
+      const rawDate = rec.dueDate || '';
+
+      descTd.innerHTML = `<input value="${escapeHtml(rec.description||'')}">`;
+      ownerTd.innerHTML = `<input value="${escapeHtml(rec.owner||'')}">`;
+      dueTd.innerHTML = `<input type="date" value="${rawDate}">`;
+      actionTd.innerHTML = `
+        <button class="btn good saveBtn">Save</button>
+        <button class="btn cancelBtn">Cancel</button>
+      `;
+
+      actionTd.querySelector('.saveBtn').addEventListener('click', ()=>{
+        const newDesc = descTd.querySelector('input').value.trim();
+        const newOwner = ownerTd.querySelector('input').value.trim();
+        const newDue = dueTd.querySelector('input').value || null; // store exact input (no timezone conversion)
+        updateRec(aid, rid, { description: newDesc, owner: newOwner, dueDate: newDue });
+        refreshAll();
+      });
+      actionTd.querySelector('.cancelBtn').addEventListener('click', ()=>{ refreshAll(); });
+    }
+
+    // -----------------------
+    // Dashboard KPIs + Chart + Urgent Table
+    // -----------------------
+    const kpiDueSoon = document.getElementById('kpiDueSoon');
+    const kpiOverdue = document.getElementById('kpiOverdue');
+    const kpiTotal = document.getElementById('kpiTotal');
+    const urgentTableBody = document.querySelector('#urgentTable tbody');
+
+    function flattenRecs(){
+      const out = [];
+      state.audits.forEach(a=> (a.recommendations||[]).forEach(r=> out.push({ audit:a, rec:r })) );
+      return out;
+    }
+
+    function getStatus(rec){
+      if(rec.status === 'Closed') return 'ok';
+      if(!rec.dueDate) return 'ok';
+      // interpret stored YYYY-MM-DD as local date without TZ shift
+      const [y,m,d] = rec.dueDate.split('-').map(n=>parseInt(n,10));
+      const due = new Date(y, m-1, d);
+      const today = new Date(); today.setHours(0,0,0,0);
+      const diffDays = Math.floor((due - today) / (1000*60*60*24));
+      if(diffDays < 0) return 'overdue';
+      if(diffDays <= 7) return 'soon';
+      return 'ok';
+    }
+
+    function statusBadge(r){
+      const st = getStatus(r);
+      const label = (r.status==='Closed')? 'Closed' : (st==='overdue'?'Overdue': st==='soon'?'Due Soon':'On Track');
+      return `<span class="status ${st}">${label}</span>`;
+    }
+
+    let barChart;
+    function renderDashboard(){
+      const rows = flattenRecs();
+      const total = rows.length;
+      const overdue = rows.filter(x=> getStatus(x.rec)==='overdue' && x.rec.status!=='Closed').length;
+      const soon = rows.filter(x=> getStatus(x.rec)==='soon' && x.rec.status!=='Closed').length;
+
+      kpiDueSoon.textContent = String(soon);
+      kpiOverdue.textContent = String(overdue);
+      kpiTotal.textContent = String(total);
+
+      // Urgent table (overdue + due soon, top 10 by date asc)
+      const urgent = rows.filter(x=> ['overdue','soon'].includes(getStatus(x.rec)) && x.rec.status!=='Closed')
+                         .sort((a,b)=> {
+                           const aD = a.rec.dueDate ? new Date(a.rec.dueDate) : new Date('2099-12-31');
+                           const bD = b.rec.dueDate ? new Date(b.rec.dueDate) : new Date('2099-12-31');
+                           return aD - bD;
+                         })
+                         .slice(0,10);
+      urgentTableBody.innerHTML='';
+      urgent.forEach(({audit, rec})=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(audit.auditNumber)}</td>
+          <td>${escapeHtml(rec.description||'')}</td>
+          <td>${rec.dueDate? niceDate(rec.dueDate):'<span class="muted">—</span>'}</td>
+          <td>${statusBadge(rec)}</td>
+        `;
+        urgentTableBody.appendChild(tr);
+      });
+
+      // Chart: buckets by month (next 6 months)
+      const labels = [];
+      const counts = [];
+      const today = new Date();
+      for(let i=0;i<6;i++){
+        const d = new Date(today.getFullYear(), today.getMonth()+i, 1);
+        const label = d.toLocaleDateString(undefined, { month:'short', year:'2-digit' });
+        labels.push(label);
+        const month = d.getMonth();
+        const year = d.getFullYear();
+        counts.push(rows.filter(x=>{
+          if(!x.rec.dueDate) return false;
+          const [yy,mm,dd] = x.rec.dueDate.split('-').map(n=>parseInt(n,10));
+          const ddLocal = new Date(yy, mm-1, dd);
+          return ddLocal.getMonth()===month && ddLocal.getFullYear()===year && x.rec.status!=='Closed';
+        }).length);
+      }
+
+      const ctx = document.getElementById('barChart');
+      if(barChart) barChart.destroy();
+      barChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets: [{ label: 'Open Recommendations Due', data: counts }] },
+        options: {
+          responsive:true,
+          maintainAspectRatio:true, // respects our wrapper height
+          plugins:{ legend:{ display:true } },
+          scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } }
+        }
+      });
+    }
+
+    // -----------------------
+    // Export / Import
+    // -----------------------
+    const exportBtn = document.getElementById('exportBtn');
+    exportBtn.addEventListener('click', ()=>{
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type:'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'audit-recommendation-tracker.json'; a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    const importFile = document.getElementById('importFile');
+    importFile.addEventListener('change', (e)=>{
+      const file = e.target.files[0]; if(!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try{
+          const data = JSON.parse(reader.result);
+          if(!data || !Array.isArray(data.audits)) throw new Error('Invalid file');
+          state = data; save(state); populateExistingAuditSelect(); refreshAll(); alert('Import successful.');
+        }catch(err){ alert('Import failed: '+err.message); }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    });
+
+    function refreshAll(){ renderDashboard(); renderList(); populateExistingAuditSelect(); }
+
+    // Seed example data for first-time UX
+    function maybeSeed(){
+      if(state.audits.length) return;
+      const seed = {
+        audits: [
+          { id: uid(), auditNumber:'2025-001', auditName:'Procure-to-Pay (P2P)', recommendations:[
+            { id: uid(), description:'Enable 3-way match for invoices > $10k', owner:'AP Manager', dueDate: nextDate(10), status:'Open' },
+            { id: uid(), description:'Vendor master change approvals in workflow', owner:'Vendor Ops', dueDate: nextDate(-5), status:'In Progress' }
+          ]},
+          { id: uid(), auditNumber:'2025-007', auditName:'Access Management', recommendations:[
+            { id: uid(), description:'Quarterly access reviews for privileged roles', owner:'IAM Lead', dueDate: nextDate(3), status:'Open' },
+            { id: uid(), description:'Automate leaver termination feed', owner:'HRIS', dueDate: nextDate(45), status:'Open' }
+          ]}
+        ]
+      };
+      state = seed; save(state);
+    }
+    function nextDate(offsetDays){ const d = new Date(); d.setDate(d.getDate()+offsetDays); return d.toISOString().slice(0,10); }
+
+    // Init
+    maybeSeed();
+    populateExistingAuditSelect();
+    addRecRow(); // starter row in new audit form
+    refreshAll();
+  </script>
+</body>
+</html>
