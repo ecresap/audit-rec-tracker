@@ -30,7 +30,7 @@
       margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
       background: var(--bg); color: var(--ink);
     }
-    .container{max-width:1200px; margin: 0 auto; padding: 24px;}
+    .container{max-width:1300px; margin: 0 auto; padding: 24px;}
     header{
       position: sticky; top:0; z-index: 50; backdrop-filter: blur(8px);
       background: rgba(247,247,244,0.8); border-bottom: 1px solid #eee;
@@ -51,6 +51,10 @@
     .btn.good{ background: linear-gradient(180deg, var(--good), #059669); color:#fff; }
     .btn.warn{ background: linear-gradient(180deg, var(--warn), #d97706); color:#fff; }
     .btn.bad{ background: linear-gradient(180deg, var(--bad), #b91c1c); color:#fff; }
+    .btn.editBtn{
+      background: linear-gradient(180deg,#facc15,#eab308);
+      color:#78350f;
+    }
 
     .card{
       background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
@@ -99,7 +103,8 @@
 
     .table{ width:100%; border-collapse: collapse }
     .table th, .table td{
-      padding:8px 6px; border-bottom: 1px dashed #e5e7eb; text-align:left; font-size:13px
+      padding:8px 6px; border-bottom: 1px dashed #e5e7eb; text-align:left; font-size:13px;
+      vertical-align: top;
     }
     .table th{ color: var(--muted); font-weight:600; font-size:11px; text-transform: uppercase; letter-spacing:.08em }
 
@@ -118,6 +123,11 @@
     /* Chart container fixed to keep one-screen height */
     .chart-wrap{ height: 360px; max-height: 65vh; }
     #barChart{ width:100%; height:100% !important; display:block }
+
+    .meta-row td,
+    .meta-edit-row td{
+      background:#f9fafb;
+    }
   </style>
 </head>
 <body>
@@ -243,19 +253,20 @@
 
             <div class="span-12">
               <div class="toolbar">
-                <div class="muted">Add as many recommendation rows as you need (basic fields).</div>
+                <div class="muted">Add as many recommendation rows as you need (basic fields). Use “Full Metadata” when you need richer detail.</div>
                 <button class="btn" id="addRowBtn">+ Add Row</button>
               </div>
               <div class="card" style="padding:0">
                 <table class="table" id="recTable">
                   <thead>
                     <tr>
-                      <th style="width:32%">Description</th>
+                      <th style="width:28%">Description</th>
                       <th style="width:18%">Owner</th>
-                      <th style="width:16%">Due Date</th>
-                      <th style="width:14%">Status</th>
-                      <th style="width:10%">Risk Rating</th>
-                      <th style="width:10%">Remove</th>
+                      <th style="width:14%">Due Date</th>
+                      <th style="width:12%">Status</th>
+                      <th style="width:12%">Risk Rating</th>
+                      <th style="width:10%">Details</th>
+                      <th style="width:6%">Remove</th>
                     </tr>
                   </thead>
                   <tbody></tbody>
@@ -478,7 +489,7 @@
     });
 
     // -----------------------
-    // Input: New Audit + Rows
+    // Input: New Audit + Rows (basic + per-row metadata)
     // -----------------------
     const recTableBody = document.querySelector('#recTable tbody');
     const addRowBtn = document.getElementById('addRowBtn');
@@ -486,20 +497,21 @@
     const clearNewAuditForm = document.getElementById('clearNewAuditForm');
 
     function addRecRow(pref={}){
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><input placeholder="Recommendation description" value="${pref.description||''}"></td>
-        <td><input placeholder="Owner" value="${pref.owner||''}"></td>
-        <td><input type="date" value="${pref.dueDate||''}"></td>
+      const mainTr = document.createElement('tr');
+      mainTr.className = 'main-row';
+      mainTr.innerHTML = `
+        <td><input class="basic-desc" placeholder="Recommendation description" value="${pref.description||''}"></td>
+        <td><input class="basic-owner" placeholder="Owner" value="${pref.owner||''}"></td>
+        <td><input class="basic-due" type="date" value="${pref.dueDate||''}"></td>
         <td>
-          <select>
+          <select class="basic-status">
             <option ${pref.status==='Open'?'selected':''}>Open</option>
             <option ${pref.status==='In Progress'?'selected':''}>In Progress</option>
             <option ${pref.status==='Closed'?'selected':''}>Closed</option>
           </select>
         </td>
         <td>
-          <select>
+          <select class="basic-risk">
             <option ${pref.riskRating===''?'selected':''} value="">(none)</option>
             <option ${pref.riskRating==='Low'?'selected':''}>Low</option>
             <option ${pref.riskRating==='Medium'?'selected':''}>Medium</option>
@@ -507,10 +519,95 @@
             <option ${pref.riskRating==='Critical'?'selected':''}>Critical</option>
           </select>
         </td>
-        <td><button class="btn bad" title="Remove row">✕</button></td>
+        <td><button class="btn fullMetaBtn" type="button">Full Metadata</button></td>
+        <td><button class="btn bad removeBtn" type="button" title="Remove row">✕</button></td>
       `;
-      tr.querySelector('button').addEventListener('click', ()=>{ tr.remove(); });
-      recTableBody.appendChild(tr);
+
+      const metaTr = document.createElement('tr');
+      metaTr.className = 'meta-row hidden';
+      metaTr.innerHTML = `
+        <td colspan="7">
+          <div class="grid">
+            <div class="span-12">
+              <div class="field">
+                <label>Title</label>
+                <input class="meta-title" placeholder="Optional short title" value="${pref.title||''}">
+              </div>
+            </div>
+            <div class="span-12">
+              <div class="field">
+                <label>Root Cause</label>
+                <textarea class="meta-rootCause" placeholder="Root cause">${pref.rootCause||''}</textarea>
+              </div>
+            </div>
+            <div class="span-12">
+              <div class="field">
+                <label>Likelihood</label>
+                <select class="meta-likelihood">
+                  <option value="">(none)</option>
+                  <option ${pref.likelihood==='Low'?'selected':''}>Low</option>
+                  <option ${pref.likelihood==='Medium'?'selected':''}>Medium</option>
+                  <option ${pref.likelihood==='High'?'selected':''}>High</option>
+                </select>
+              </div>
+            </div>
+            <div class="span-12">
+              <div class="field">
+                <label>Impact</label>
+                <select class="meta-impact">
+                  <option value="">(none)</option>
+                  <option ${pref.impact==='Low'?'selected':''}>Low</option>
+                  <option ${pref.impact==='Medium'?'selected':''}>Medium</option>
+                  <option ${pref.impact==='High'?'selected':''}>High</option>
+                  <option ${pref.impact==='Severe'?'selected':''}>Severe</option>
+                </select>
+              </div>
+            </div>
+            <div class="span-12">
+              <div class="field">
+                <label>Control ID Linkage</label>
+                <input class="meta-controlId" placeholder="e.g., P2P-CTRL-001" value="${pref.controlId||''}">
+              </div>
+            </div>
+            <div class="span-12">
+              <div class="field">
+                <label>Regulatory Mapping</label>
+                <input class="meta-regMap" placeholder="e.g., SOX 404, COSO, ISO 27001" value="${pref.regulatoryMapping||''}">
+              </div>
+            </div>
+            <div class="span-12">
+              <div class="field">
+                <label>Related Processes/Systems</label>
+                <input class="meta-procSys" placeholder="e.g., P2P, SAP, Coupa" value="${pref.processesSystems||''}">
+              </div>
+            </div>
+            <div class="span-12">
+              <div class="field">
+                <label>Geography</label>
+                <input class="meta-geo" placeholder="e.g., US, EMEA, APAC" value="${pref.geography||''}">
+              </div>
+            </div>
+            <div class="span-12">
+              <div class="field">
+                <label>Business Unit</label>
+                <input class="meta-bu" placeholder="e.g., Client Products Group" value="${pref.businessUnit||''}">
+              </div>
+            </div>
+          </div>
+        </td>
+      `;
+
+      mainTr.querySelector('.fullMetaBtn').addEventListener('click', ()=>{
+        metaTr.classList.toggle('hidden');
+      });
+
+      mainTr.querySelector('.removeBtn').addEventListener('click', ()=>{
+        metaTr.remove();
+        mainTr.remove();
+      });
+
+      recTableBody.appendChild(mainTr);
+      recTableBody.appendChild(metaTr);
     }
 
     addRowBtn.addEventListener('click', ()=> addRecRow());
@@ -549,22 +646,40 @@
       const auditName = document.getElementById('auditName').value.trim();
       if(!auditNumber || !auditName){ alert('Please enter Audit Number and Audit Name.'); return; }
 
-      const rows = Array.from(recTableBody.querySelectorAll('tr'));
-      if(rows.length === 0){ if(!confirm('No recommendations added. Create audit with zero recommendations?')) return; }
+      const mainRows = Array.from(recTableBody.querySelectorAll('tr.main-row'));
+      if(mainRows.length === 0){ if(!confirm('No recommendations added. Create audit with zero recommendations?')) return; }
 
       const today = todayYMD();
-      const recommendations = rows.map(r=>{
-        const inputs = r.querySelectorAll('input, select');
-        const descInput = inputs[0];
-        const ownerInput = inputs[1];
-        const dueInput = inputs[2];
-        const statusSel = inputs[3];
-        const riskSel = inputs[4];
+      const recommendations = mainRows.map(row=>{
+        const descInput = row.querySelector('.basic-desc');
+        const ownerInput = row.querySelector('.basic-owner');
+        const dueInput = row.querySelector('.basic-due');
+        const statusSel = row.querySelector('.basic-status');
+        const riskSel = row.querySelector('.basic-risk');
+
+        const metaRow = row.nextElementSibling && row.nextElementSibling.classList.contains('meta-row')
+          ? row.nextElementSibling
+          : null;
+
+        let meta = {};
+        if(metaRow){
+          meta = {
+            title: metaRow.querySelector('.meta-title').value.trim(),
+            rootCause: metaRow.querySelector('.meta-rootCause').value.trim(),
+            likelihood: metaRow.querySelector('.meta-likelihood').value,
+            impact: metaRow.querySelector('.meta-impact').value,
+            controlId: metaRow.querySelector('.meta-controlId').value.trim(),
+            regulatoryMapping: metaRow.querySelector('.meta-regMap').value.trim(),
+            processesSystems: metaRow.querySelector('.meta-procSys').value.trim(),
+            geography: metaRow.querySelector('.meta-geo').value.trim(),
+            businessUnit: metaRow.querySelector('.meta-bu').value.trim()
+          };
+        }
 
         const status = statusSel.value || 'Open';
         const rec = {
           id: uid(),
-          title: '', // can be set later
+          title: meta.title || '',
           description: descInput.value.trim(),
           owner: ownerInput.value.trim(),
           dueDate: dueInput.value || null,
@@ -574,14 +689,14 @@
           lastStatusChangeAt: today,
           reopenCount: 0,
           riskRating: riskSel.value || '',
-          likelihood: '',
-          impact: '',
-          rootCause: '',
-          controlId: '',
-          regulatoryMapping: '',
-          processesSystems: '',
-          geography: '',
-          businessUnit: ''
+          likelihood: meta.likelihood || '',
+          impact: meta.impact || '',
+          rootCause: meta.rootCause || '',
+          controlId: meta.controlId || '',
+          regulatoryMapping: meta.regulatoryMapping || '',
+          processesSystems: meta.processesSystems || '',
+          geography: meta.geography || '',
+          businessUnit: meta.businessUnit || ''
         };
         return rec;
       }).filter(r=> r.description);
@@ -717,7 +832,7 @@
     }
 
     // -----------------------
-    // List + Search / Inline Edit & Status Change
+    // List + Search / Inline Edit & Full Metadata
     // -----------------------
     const listContainer = document.getElementById('listContainer');
     const searchInput = document.getElementById('search');
@@ -752,7 +867,17 @@
           </div>
           <div class="audit-body">
             <table class="table">
-              <thead><tr><th>Title</th><th>Description</th><th>Owner</th><th>Due</th><th>Status</th><th>Risk</th><th></th></tr></thead>
+              <thead>
+                <tr>
+                  <th style="width:16%">Title</th>
+                  <th style="width:30%">Description</th>
+                  <th style="width:18%">Owner</th>
+                  <th style="width:12%">Due</th>
+                  <th style="width:10%">Status</th>
+                  <th style="width:8%">Risk</th>
+                  <th style="width:6%"></th>
+                </tr>
+              </thead>
               <tbody></tbody>
             </table>
           </div>
@@ -776,8 +901,8 @@
             </td>
             <td>${escapeHtml(r.riskRating || '')}</td>
             <td style="text-align:right">
-              <button class="btn editBtn" title="Edit">Edit</button>
-              <button class="btn bad deleteBtn" title="Delete">Delete</button>
+              <button class="btn editBtn" title="Edit" type="button">Edit</button>
+              <button class="btn bad deleteBtn" title="Delete" type="button">Delete</button>
             </td>
           `;
 
@@ -801,7 +926,7 @@
             }
           });
 
-          // Edit: title, description, owner, due date
+          // Edit: full metadata panel
           tr.querySelector('.editBtn').addEventListener('click', ()=>{
             enterEditMode(tr, audit.id, r.id);
           });
@@ -816,32 +941,180 @@
     function enterEditMode(tr, aid, rid){
       const audit = findAudit(aid); const rec = findRec(audit, rid);
       if(!rec) return;
+
+      // Prevent multiple edit rows at once in same table: re-render and re-find row
+      const tbody = tr.parentNode;
+      // (Optional: could be stricter, but simple approach is fine if user edits one at a time)
+
       const titleTd = tr.querySelector('.title');
       const descTd = tr.querySelector('.desc');
       const ownerTd = tr.querySelector('.owner');
       const dueTd = tr.querySelector('.due');
+      const statusCell = tr.querySelector('.statusCell');
       const actionTd = tr.lastElementChild;
 
       const rawDate = rec.dueDate || '';
 
-      titleTd.innerHTML = `<input value="${escapeHtml(rec.title||'')}">`;
-      descTd.innerHTML = `<input value="${escapeHtml(rec.description||'')}">`;
-      ownerTd.innerHTML = `<input value="${escapeHtml(rec.owner||'')}">`;
-      dueTd.innerHTML = `<input type="date" value="${rawDate}">`;
-      actionTd.innerHTML = `
-        <button class="btn good saveBtn">Save</button>
-        <button class="btn cancelBtn">Cancel</button>
+      titleTd.innerHTML = `<input class="edit-title" value="${escapeHtml(rec.title||'')}">`;
+      descTd.innerHTML = `<textarea class="edit-desc">${escapeHtml(rec.description||'')}</textarea>`;
+      ownerTd.innerHTML = `<input class="edit-owner" value="${escapeHtml(rec.owner||'')}">`;
+      dueTd.innerHTML = `<input class="edit-due" type="date" value="${rawDate}" style="width:100%">`;
+
+      // Status + risk as selects in main row
+      const currentStatus = rec.status || 'Open';
+      const currentRisk = rec.riskRating || '';
+      statusCell.innerHTML = `
+        <select class="edit-status">
+          <option ${currentStatus==='Open'?'selected':''}>Open</option>
+          <option ${currentStatus==='In Progress'?'selected':''}>In Progress</option>
+          <option ${currentStatus==='Closed'?'selected':''}>Closed</option>
+        </select>
+      `;
+      const riskTd = statusCell.nextElementSibling;
+      riskTd.innerHTML = `
+        <select class="edit-risk">
+          <option value="" ${currentRisk===''?'selected':''}>(none)</option>
+          <option ${currentRisk==='Low'?'selected':''}>Low</option>
+          <option ${currentRisk==='Medium'?'selected':''}>Medium</option>
+          <option ${currentRisk==='High'?'selected':''}>High</option>
+          <option ${currentRisk==='Critical'?'selected':''}>Critical</option>
+        </select>
       `;
 
+      actionTd.innerHTML = `
+        <button class="btn good saveBtn" type="button">Save</button>
+        <button class="btn cancelBtn" type="button">Cancel</button>
+      `;
+
+      // Add / show metadata row under this row
+      let metaRow = tr.nextElementSibling;
+      if(!metaRow || !metaRow.classList.contains('meta-edit-row')){
+        metaRow = document.createElement('tr');
+        metaRow.className = 'meta-edit-row';
+        metaRow.innerHTML = `
+          <td colspan="7">
+            <div class="grid">
+              <div class="span-12">
+                <div class="field">
+                  <label>Root Cause</label>
+                  <textarea class="edit-rootCause"></textarea>
+                </div>
+              </div>
+              <div class="span-12">
+                <div class="field">
+                  <label>Likelihood</label>
+                  <select class="edit-likelihood">
+                    <option value="">(none)</option>
+                    <option>Low</option>
+                    <option>Medium</option>
+                    <option>High</option>
+                  </select>
+                </div>
+              </div>
+              <div class="span-12">
+                <div class="field">
+                  <label>Impact</label>
+                  <select class="edit-impact">
+                    <option value="">(none)</option>
+                    <option>Low</option>
+                    <option>Medium</option>
+                    <option>High</option>
+                    <option>Severe</option>
+                  </select>
+                </div>
+              </div>
+              <div class="span-12">
+                <div class="field">
+                  <label>Control ID Linkage</label>
+                  <input class="edit-controlId">
+                </div>
+              </div>
+              <div class="span-12">
+                <div class="field">
+                  <label>Regulatory Mapping</label>
+                  <input class="edit-regMap">
+                </div>
+              </div>
+              <div class="span-12">
+                <div class="field">
+                  <label>Related Processes/Systems</label>
+                  <input class="edit-procSys">
+                </div>
+              </div>
+              <div class="span-12">
+                <div class="field">
+                  <label>Geography</label>
+                  <input class="edit-geo">
+                </div>
+              </div>
+              <div class="span-12">
+                <div class="field">
+                  <label>Business Unit</label>
+                  <input class="edit-bu">
+                </div>
+              </div>
+            </div>
+          </td>
+        `;
+        tbody.insertBefore(metaRow, tr.nextSibling);
+      }
+
+      // Populate metadata fields
+      metaRow.querySelector('.edit-rootCause').value = rec.rootCause || '';
+      metaRow.querySelector('.edit-likelihood').value = rec.likelihood || '';
+      metaRow.querySelector('.edit-impact').value = rec.impact || '';
+      metaRow.querySelector('.edit-controlId').value = rec.controlId || '';
+      metaRow.querySelector('.edit-regMap').value = rec.regulatoryMapping || '';
+      metaRow.querySelector('.edit-procSys').value = rec.processesSystems || '';
+      metaRow.querySelector('.edit-geo').value = rec.geography || '';
+      metaRow.querySelector('.edit-bu').value = rec.businessUnit || '';
+
+      // Save
       actionTd.querySelector('.saveBtn').addEventListener('click', ()=>{
-        const newTitle = titleTd.querySelector('input').value.trim();
-        const newDesc = descTd.querySelector('input').value.trim();
-        const newOwner = ownerTd.querySelector('input').value.trim();
-        const newDue = dueTd.querySelector('input').value || null; // exact date
-        updateRec(aid, rid, { title: newTitle, description: newDesc, owner: newOwner, dueDate: newDue });
+        const newTitle = tr.querySelector('.edit-title').value.trim();
+        const newDesc = tr.querySelector('.edit-desc').value.trim();
+        const newOwner = tr.querySelector('.edit-owner').value.trim();
+        const newDue = tr.querySelector('.edit-due').value || null;
+        const newStatus = tr.querySelector('.edit-status').value;
+        const newRisk = tr.querySelector('.edit-risk').value;
+
+        const newRootCause = metaRow.querySelector('.edit-rootCause').value.trim();
+        const newLikelihood = metaRow.querySelector('.edit-likelihood').value;
+        const newImpact = metaRow.querySelector('.edit-impact').value;
+        const newControlId = metaRow.querySelector('.edit-controlId').value.trim();
+        const newRegMap = metaRow.querySelector('.edit-regMap').value.trim();
+        const newProcSys = metaRow.querySelector('.edit-procSys').value.trim();
+        const newGeo = metaRow.querySelector('.edit-geo').value.trim();
+        const newBu = metaRow.querySelector('.edit-bu').value.trim();
+
+        const patch = {
+          title: newTitle,
+          description: newDesc,
+          owner: newOwner,
+          dueDate: newDue,
+          riskRating: newRisk,
+          rootCause: newRootCause,
+          likelihood: newLikelihood,
+          impact: newImpact,
+          controlId: newControlId,
+          regulatoryMapping: newRegMap,
+          processesSystems: newProcSys,
+          geography: newGeo,
+          businessUnit: newBu
+        };
+
+        // Apply status change with timing
+        applyStatusChange(rec, newStatus);
+        Object.assign(rec, patch);
+        ensureDefaults(rec);
+        save(state);
         refreshAll();
       });
-      actionTd.querySelector('.cancelBtn').addEventListener('click', ()=>{ refreshAll(); });
+
+      // Cancel: re-render list
+      actionTd.querySelector('.cancelBtn').addEventListener('click', ()=>{
+        refreshAll();
+      });
     }
 
     searchInput.addEventListener('input', renderList);
@@ -858,8 +1131,8 @@
     const kpiAvgAge = document.getElementById('kpiAvgAge');
     const kpiReopened = document.getElementById('kpiReopened');
     const urgentTableBody = document.querySelector('#urgentTable tbody');
-    const medianTableBody = document.querySelector('#medianTable tbody');
-    const stageTableBody = document.querySelector('#stageTable tbody');
+    const medianTableBody = document.getElementById('medianTable').querySelector('tbody');
+    const stageTableBody = document.getElementById('stageTable').querySelector('tbody');
     const bottleneckSummary = document.getElementById('bottleneckSummary');
 
     function flattenRecs(){
