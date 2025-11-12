@@ -71,16 +71,22 @@
     .grid{ display:grid; grid-template-columns: repeat(12, 1fr); gap:16px; }
     .span-12{grid-column: span 12}
     .span-8{grid-column: span 8}
+    .span-6{grid-column: span 6}
     .span-4{grid-column: span 4}
-    @media (max-width: 1024px){ .span-8{grid-column:span 12} .span-4{grid-column:span 12} }
+    .span-3{grid-column: span 3}
+    @media (max-width: 1024px){
+      .span-8,.span-6,.span-4,.span-3{grid-column:span 12}
+    }
 
     .field{display:flex; flex-direction:column; gap:8px; margin-bottom:14px}
     label{font-size:13px; color: var(--muted)}
     input, select, textarea{
-      width:100%; padding:12px 14px; border-radius: var(--radius-xs); border: 1px solid #e5e7eb; background:#fff;
+      width:100%; padding:10px 12px; border-radius: var(--radius-xs); border: 1px solid #e5e7eb; background:#fff;
       box-shadow: inset 0 1px 0 rgba(0,0,0,0.02);
       transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+      font-size: 14px;
     }
+    textarea{min-height:60px; resize:vertical}
     input:focus, select:focus, textarea:focus{ outline:none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.15) }
 
     .toolbar{display:flex; gap:10px; align-items:center; justify-content:space-between; margin: 18px 0; flex-wrap: wrap}
@@ -93,9 +99,9 @@
 
     .table{ width:100%; border-collapse: collapse }
     .table th, .table td{
-      padding:10px 8px; border-bottom: 1px dashed #e5e7eb; text-align:left; font-size:14px
+      padding:8px 6px; border-bottom: 1px dashed #e5e7eb; text-align:left; font-size:13px
     }
-    .table th{ color: var(--muted); font-weight:600; font-size:12px; text-transform: uppercase; letter-spacing:.08em }
+    .table th{ color: var(--muted); font-weight:600; font-size:11px; text-transform: uppercase; letter-spacing:.08em }
 
     .status{ font-size:12px; padding:4px 8px; border-radius: 999px; display:inline-block; }
     .status.overdue{ background:#fee2e2; color:#991b1b }
@@ -112,7 +118,6 @@
     /* Chart container fixed to keep one-screen height */
     .chart-wrap{ height: 360px; max-height: 65vh; }
     #barChart{ width:100%; height:100% !important; display:block }
-
   </style>
 </head>
 <body>
@@ -138,6 +143,7 @@
         <span class="chip">Hover micro-movements</span>
       </div>
 
+      <!-- Top KPIs -->
       <div class="kpi">
         <div class="card span-4">
           <div class="label">Due within 7 days</div>
@@ -153,13 +159,33 @@
         </div>
       </div>
 
-      <div class="grid" style="margin-top:16px">
-        <div class="card span-8">
-          <h3 style="margin:4px 0 14px">Timeline Outlook</h3>
-          <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+      <!-- Second row KPIs -->
+      <div class="kpi">
+        <div class="card span-4">
+          <div class="label">On-time Closure Rate</div>
+          <div id="kpiOnTime" class="value">0%</div>
         </div>
         <div class="card span-4">
-          <h3 style="margin:4px 0 14px">Urgent Queue</h3>
+          <div class="label">Average Age (Open, days)</div>
+          <div id="kpiAvgAge" class="value">0</div>
+        </div>
+        <div class="card span-4">
+          <div class="label">Reopened Rate</div>
+          <div id="kpiReopened" class="value">0%</div>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:16px">
+        <!-- Residual Risk Profile -->
+        <div class="card span-8">
+          <h3 style="margin:4px 0 4px">Residual Risk Profile</h3>
+          <p class="muted" style="margin:0 0 14px">Open recommendations by risk rating (snapshot).</p>
+          <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+        </div>
+        <!-- Urgent Queue -->
+        <div class="card span-4">
+          <h3 style="margin:4px 0 4px">Urgent Queue</h3>
+          <p class="muted" style="margin:0 0 10px">Due soon or overdue (next 10).</p>
           <table class="table" id="urgentTable">
             <thead>
               <tr><th>Audit</th><th>Recommendation</th><th>Due</th><th>Status</th></tr>
@@ -168,15 +194,40 @@
           </table>
         </div>
       </div>
+
+      <!-- Quality & Bottleneck Analysis -->
+      <div class="card span-12" style="margin-top:16px">
+        <h3 style="margin:4px 0 10px">Quality & Bottleneck Analysis</h3>
+        <div class="grid">
+          <div class="span-4">
+            <h4 style="margin:0 0 6px;font-size:14px">Median Days to Close (by Risk)</h4>
+            <table class="table" id="medianTable">
+              <thead><tr><th>Risk Rating</th><th>Median Days</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="span-4">
+            <h4 style="margin:0 0 6px;font-size:14px">Time in Stage (Avg Days)</h4>
+            <table class="table" id="stageTable">
+              <thead><tr><th>Status</th><th>Avg Days</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="span-4">
+            <h4 style="margin:0 0 6px;font-size:14px">Bottleneck & Open Risk</h4>
+            <div id="bottleneckSummary" class="muted" style="font-size:13px"></div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- INPUT -->
     <section id="input" class="section">
       <div class="grid">
+        <!-- New Audit + simple rec rows -->
         <div class="card span-12">
           <h3 style="margin:4px 0 14px">Add New Audit & Multiple Recommendations</h3>
           <div class="grid">
-            <!-- Full-width Number then Name beneath, both expanded -->
             <div class="span-12">
               <div class="field">
                 <label for="auditNumber">Audit Number</label>
@@ -192,13 +243,20 @@
 
             <div class="span-12">
               <div class="toolbar">
-                <div class="muted">Add as many recommendation rows as you need.</div>
+                <div class="muted">Add as many recommendation rows as you need (basic fields).</div>
                 <button class="btn" id="addRowBtn">+ Add Row</button>
               </div>
               <div class="card" style="padding:0">
                 <table class="table" id="recTable">
                   <thead>
-                    <tr><th style="width:34%">Description</th><th style="width:22%">Owner</th><th style="width:18%">Due Date</th><th style="width:10%">Status</th><th style="width:10%">Remove</th></tr>
+                    <tr>
+                      <th style="width:32%">Description</th>
+                      <th style="width:18%">Owner</th>
+                      <th style="width:16%">Due Date</th>
+                      <th style="width:14%">Status</th>
+                      <th style="width:10%">Risk Rating</th>
+                      <th style="width:10%">Remove</th>
+                    </tr>
                   </thead>
                   <tbody></tbody>
                 </table>
@@ -211,35 +269,44 @@
           </div>
         </div>
 
+        <!-- Full-metadata single recommendation to existing audit -->
         <div class="card span-12">
-          <h3 style="margin:4px 0 14px">Add Recommendation to Existing Audit</h3>
+          <h3 style="margin:4px 0 14px">Add Recommendation to Existing Audit (Full Metadata)</h3>
           <div class="grid">
-            <div class="span-5">
+            <div class="span-6">
               <div class="field">
                 <label for="existingAuditSelect">Select Audit</label>
                 <select id="existingAuditSelect"></select>
               </div>
             </div>
-            <div class="span-7"></div>
+            <div class="span-6"></div>
+
+            <div class="span-6">
+              <div class="field">
+                <label for="newRecTitle">Title</label>
+                <input id="newRecTitle" placeholder="e.g., Implement 3-way match control" />
+              </div>
+            </div>
             <div class="span-6">
               <div class="field">
                 <label for="newRecDesc">Description</label>
-                <input id="newRecDesc" placeholder="e.g., Implement 3-way match control" />
+                <textarea id="newRecDesc" placeholder="More detailed description of the recommendation"></textarea>
               </div>
             </div>
-            <div class="span-3">
+
+            <div class="span-4">
               <div class="field">
                 <label for="newRecOwner">Owner</label>
                 <input id="newRecOwner" placeholder="e.g., AP Manager" />
               </div>
             </div>
-            <div class="span-3">
+            <div class="span-4">
               <div class="field">
                 <label for="newRecDue">Due Date</label>
                 <input id="newRecDue" type="date" />
               </div>
             </div>
-            <div class="span-3">
+            <div class="span-4">
               <div class="field">
                 <label for="newRecStatus">Status</label>
                 <select id="newRecStatus">
@@ -249,6 +316,82 @@
                 </select>
               </div>
             </div>
+
+            <div class="span-4">
+              <div class="field">
+                <label for="newRecRisk">Risk Rating</label>
+                <select id="newRecRisk">
+                  <option value="">(none)</option>
+                  <option>Low</option>
+                  <option>Medium</option>
+                  <option>High</option>
+                  <option>Critical</option>
+                </select>
+              </div>
+            </div>
+            <div class="span-4">
+              <div class="field">
+                <label for="newRecLikelihood">Likelihood</label>
+                <select id="newRecLikelihood">
+                  <option value="">(none)</option>
+                  <option>Low</option>
+                  <option>Medium</option>
+                  <option>High</option>
+                </select>
+              </div>
+            </div>
+            <div class="span-4">
+              <div class="field">
+                <label for="newRecImpact">Impact</label>
+                <select id="newRecImpact">
+                  <option value="">(none)</option>
+                  <option>Low</option>
+                  <option>Medium</option>
+                  <option>High</option>
+                  <option>Severe</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="span-6">
+              <div class="field">
+                <label for="newRecRootCause">Root Cause</label>
+                <textarea id="newRecRootCause" placeholder="e.g., Lack of automated 3-way match control"></textarea>
+              </div>
+            </div>
+            <div class="span-6">
+              <div class="field">
+                <label for="newRecControlId">Control ID Linkage</label>
+                <input id="newRecControlId" placeholder="e.g., P2P-CTRL-001" />
+              </div>
+            </div>
+
+            <div class="span-6">
+              <div class="field">
+                <label for="newRecRegMap">Regulatory Mapping</label>
+                <input id="newRecRegMap" placeholder="e.g., SOX 404, COSO, ISO 27001" />
+              </div>
+            </div>
+            <div class="span-6">
+              <div class="field">
+                <label for="newRecProcSys">Related Processes/Systems</label>
+                <input id="newRecProcSys" placeholder="e.g., P2P, SAP, Coupa" />
+              </div>
+            </div>
+
+            <div class="span-4">
+              <div class="field">
+                <label for="newRecGeo">Geography</label>
+                <input id="newRecGeo" placeholder="e.g., US, EMEA, APAC" />
+              </div>
+            </div>
+            <div class="span-4">
+              <div class="field">
+                <label for="newRecBU">Business Unit</label>
+                <input id="newRecBU" placeholder="e.g., Client Products Group" />
+              </div>
+            </div>
+
             <div class="span-12">
               <button class="btn primary" id="addToExistingBtn">Add to Audit</button>
             </div>
@@ -282,17 +425,19 @@
     // -----------------------
     // Basic Data Layer
     // -----------------------
-    const STORAGE_KEY = 'auditTrackerData_v1';
+    const STORAGE_KEY = 'auditTrackerData_v2';
 
     /**
-     * Shape:
+     * Recommendation shape:
      * {
-     *   audits: [
-     *     { id, auditNumber, auditName, recommendations: [ { id, description, owner, dueDate, status } ] }
-     *   ]
+     *   id, title, description, owner, dueDate, status,
+     *   createdAt, closedAt, lastStatusChangeAt, reopenCount,
+     *   riskRating, likelihood, impact,
+     *   rootCause, controlId, regulatoryMapping, processesSystems, geography, businessUnit
      * }
      */
     const uid = () => Math.random().toString(36).slice(2,9)+Date.now().toString(36);
+    const todayYMD = () => new Date().toISOString().slice(0,10);
 
     function load(){
       try{
@@ -346,6 +491,15 @@
             <option ${pref.status==='Closed'?'selected':''}>Closed</option>
           </select>
         </td>
+        <td>
+          <select>
+            <option ${pref.riskRating===''?'selected':''} value="">(none)</option>
+            <option ${pref.riskRating==='Low'?'selected':''}>Low</option>
+            <option ${pref.riskRating==='Medium'?'selected':''}>Medium</option>
+            <option ${pref.riskRating==='High'?'selected':''}>High</option>
+            <option ${pref.riskRating==='Critical'?'selected':''}>Critical</option>
+          </select>
+        </td>
         <td><button class="btn bad" title="Remove row">✕</button></td>
       `;
       tr.querySelector('button').addEventListener('click', ()=>{ tr.remove(); });
@@ -362,6 +516,27 @@
 
     clearNewAuditForm.addEventListener('click', clearNewAudit);
 
+    function applyStatusChange(rec, newStatus){
+      const today = todayYMD();
+      if(rec.status === newStatus) return;
+      if(rec.status === 'Closed' && newStatus !== 'Closed'){
+        rec.reopenCount = (rec.reopenCount || 0) + 1;
+        rec.closedAt = null;
+      }
+      if(newStatus === 'Closed'){
+        rec.closedAt = today;
+      }
+      rec.status = newStatus;
+      rec.lastStatusChangeAt = today;
+    }
+
+    function ensureDefaults(rec){
+      const today = todayYMD();
+      if(!rec.createdAt) rec.createdAt = today;
+      if(rec.reopenCount == null) rec.reopenCount = 0;
+      if(!rec.lastStatusChangeAt) rec.lastStatusChangeAt = rec.createdAt;
+    }
+
     saveAuditBtn.addEventListener('click', ()=>{
       const auditNumber = document.getElementById('auditNumber').value.trim();
       const auditName = document.getElementById('auditName').value.trim();
@@ -370,15 +545,38 @@
       const rows = Array.from(recTableBody.querySelectorAll('tr'));
       if(rows.length === 0){ if(!confirm('No recommendations added. Create audit with zero recommendations?')) return; }
 
+      const today = todayYMD();
       const recommendations = rows.map(r=>{
-        const [descInput, ownerInput, dueInput, statusSel] = r.querySelectorAll('input, select');
-        return {
+        const inputs = r.querySelectorAll('input, select');
+        const descInput = inputs[0];
+        const ownerInput = inputs[1];
+        const dueInput = inputs[2];
+        const statusSel = inputs[3];
+        const riskSel = inputs[4];
+
+        const status = statusSel.value || 'Open';
+        const rec = {
           id: uid(),
+          title: '', // can be set later
           description: descInput.value.trim(),
           owner: ownerInput.value.trim(),
-          dueDate: dueInput.value || null,                // store raw YYYY-MM-DD (no TZ shift)
-          status: statusSel.value || 'Open'
-        }
+          dueDate: dueInput.value || null,
+          status,
+          createdAt: today,
+          closedAt: status === 'Closed' ? today : null,
+          lastStatusChangeAt: today,
+          reopenCount: 0,
+          riskRating: riskSel.value || '',
+          likelihood: '',
+          impact: '',
+          rootCause: '',
+          controlId: '',
+          regulatoryMapping: '',
+          processesSystems: '',
+          geography: '',
+          businessUnit: ''
+        };
+        return rec;
       }).filter(r=> r.description);
 
       const audit = { id: uid(), auditNumber, auditName, recommendations };
@@ -391,7 +589,7 @@
     });
 
     // -----------------------
-    // Add to Existing Audit
+    // Add to Existing Audit (full metadata)
     // -----------------------
     const existingAuditSelect = document.getElementById('existingAuditSelect');
     const addToExistingBtn = document.getElementById('addToExistingBtn');
@@ -406,17 +604,66 @@
       if(!aid){ alert('Please select an audit.'); return; }
       const audit = state.audits.find(a=>a.id===aid);
       if(!audit){ alert('Audit not found.'); return; }
+
+      const title = document.getElementById('newRecTitle').value.trim();
       const description = document.getElementById('newRecDesc').value.trim();
       const owner = document.getElementById('newRecOwner').value.trim();
-      const dueDate = document.getElementById('newRecDue').value;  // raw YYYY-MM-DD
+      const dueDate = document.getElementById('newRecDue').value;
       const status = document.getElementById('newRecStatus').value;
-      if(!description){ alert('Please enter a description.'); return; }
-      audit.recommendations.push({ id: uid(), description, owner, dueDate: dueDate||null, status });
+      const riskRating = document.getElementById('newRecRisk').value;
+      const likelihood = document.getElementById('newRecLikelihood').value;
+      const impact = document.getElementById('newRecImpact').value;
+      const rootCause = document.getElementById('newRecRootCause').value.trim();
+      const controlId = document.getElementById('newRecControlId').value.trim();
+      const regulatoryMapping = document.getElementById('newRecRegMap').value.trim();
+      const processesSystems = document.getElementById('newRecProcSys').value.trim();
+      const geography = document.getElementById('newRecGeo').value.trim();
+      const businessUnit = document.getElementById('newRecBU').value.trim();
+
+      if(!title && !description){ alert('Please enter at least a Title or Description.'); return; }
+
+      const today = todayYMD();
+      const rec = {
+        id: uid(),
+        title,
+        description,
+        owner,
+        dueDate: dueDate || null,
+        status,
+        createdAt: today,
+        closedAt: status === 'Closed' ? today : null,
+        lastStatusChangeAt: today,
+        reopenCount: 0,
+        riskRating,
+        likelihood,
+        impact,
+        rootCause,
+        controlId,
+        regulatoryMapping,
+        processesSystems,
+        geography,
+        businessUnit
+      };
+
+      audit.recommendations.push(rec);
       save(state);
+
+      // Clear form
+      document.getElementById('newRecTitle').value = '';
       document.getElementById('newRecDesc').value = '';
       document.getElementById('newRecOwner').value = '';
       document.getElementById('newRecDue').value = '';
       document.getElementById('newRecStatus').value = 'Open';
+      document.getElementById('newRecRisk').value = '';
+      document.getElementById('newRecLikelihood').value = '';
+      document.getElementById('newRecImpact').value = '';
+      document.getElementById('newRecRootCause').value = '';
+      document.getElementById('newRecControlId').value = '';
+      document.getElementById('newRecRegMap').value = '';
+      document.getElementById('newRecProcSys').value = '';
+      document.getElementById('newRecGeo').value = '';
+      document.getElementById('newRecBU').value = '';
+
       refreshAll();
       alert('Recommendation added.');
     });
@@ -430,10 +677,8 @@
       return an.localeCompare(bn, undefined, { numeric: true, sensitivity: 'base' });
     }
     function niceDate(d){
-      // d is stored as "YYYY-MM-DD". Show in a friendly local format without shifting days.
       if(!d) return '';
       const [y,m,day] = d.split('-').map(x=>parseInt(x,10));
-      // Create as local date by using Date(year, monthIndex, day)
       const dt = new Date(y, (m-1), day);
       return dt.toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' });
     }
@@ -446,7 +691,22 @@
       const audit = findAudit(aid); if(!audit) return;
       const rec = findRec(audit, rid); if(!rec) return;
       Object.assign(rec, patch);
+      ensureDefaults(rec);
       save(state);
+    }
+
+    function parseYMD(d){
+      if(!d) return null;
+      const [y,m,day] = d.split('-').map(n=>parseInt(n,10));
+      if(!y || !m || !day) return null;
+      return new Date(y, m-1, day);
+    }
+    function daysBetween(startYMD, endDate){
+      const s = parseYMD(startYMD);
+      if(!s) return null;
+      const t0 = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+      const t1 = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+      return Math.floor((t1 - t0) / (1000*60*60*24));
     }
 
     // -----------------------
@@ -465,7 +725,8 @@
 
       audits.forEach(audit=>{
         const filteredRecs = (audit.recommendations||[]).filter(r=>{
-          const hay = `${audit.auditNumber} ${audit.auditName} ${r.description} ${r.owner}`.toLowerCase();
+          ensureDefaults(r);
+          const hay = `${audit.auditNumber} ${audit.auditName} ${r.title||''} ${r.description||''} ${r.owner||''}`.toLowerCase();
           const matchQ = !q || hay.includes(q);
           const matchS = !status || (r.status===status);
           return matchQ && matchS;
@@ -484,7 +745,7 @@
           </div>
           <div class="audit-body">
             <table class="table">
-              <thead><tr><th>Description</th><th>Owner</th><th>Due</th><th>Status</th><th></th></tr></thead>
+              <thead><tr><th>Title</th><th>Description</th><th>Owner</th><th>Due</th><th>Status</th><th>Risk</th><th></th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -495,6 +756,7 @@
           const tr = document.createElement('tr');
           tr.dataset.auditId = audit.id; tr.dataset.recId = r.id;
           tr.innerHTML = `
+            <td class="title">${escapeHtml(r.title||'')}</td>
             <td class="desc">${escapeHtml(r.description||'')}</td>
             <td class="owner">${escapeHtml(r.owner||'')}</td>
             <td class="due">${r.dueDate ? niceDate(r.dueDate) : '<span class="muted">—</span>'}</td>
@@ -505,19 +767,25 @@
                 <option ${r.status==='Closed'?'selected':''}>Closed</option>
               </select>
             </td>
+            <td>${escapeHtml(r.riskRating || '')}</td>
             <td style="text-align:right">
               <button class="btn editBtn" title="Edit">Edit</button>
               <button class="btn bad deleteBtn" title="Delete">Delete</button>
             </td>
           `;
 
-          // Status dropdown change (persist immediately)
+          // Status dropdown change (persist + update timing fields)
           tr.querySelector('.status-inline').addEventListener('change', (e)=>{
-            updateRec(audit.id, r.id, { status: e.target.value });
+            const newStatus = e.target.value;
+            const rec = findRec(audit, r.id);
+            if(!rec) return;
+            ensureDefaults(rec);
+            applyStatusChange(rec, newStatus);
+            save(state);
             refreshAll();
           });
 
-          // Delete (works)
+          // Delete
           tr.querySelector('.deleteBtn').addEventListener('click', ()=>{
             if(confirm('Delete this recommendation?')){
               const a = findAudit(audit.id);
@@ -526,7 +794,7 @@
             }
           });
 
-          // Edit inline (works; date saved exactly as selected)
+          // Edit: title, description, owner, due date
           tr.querySelector('.editBtn').addEventListener('click', ()=>{
             enterEditMode(tr, audit.id, r.id);
           });
@@ -541,14 +809,15 @@
     function enterEditMode(tr, aid, rid){
       const audit = findAudit(aid); const rec = findRec(audit, rid);
       if(!rec) return;
+      const titleTd = tr.querySelector('.title');
       const descTd = tr.querySelector('.desc');
       const ownerTd = tr.querySelector('.owner');
       const dueTd = tr.querySelector('.due');
       const actionTd = tr.lastElementChild;
 
-      // Build raw date string safely for input (YYYY-MM-DD)
       const rawDate = rec.dueDate || '';
 
+      titleTd.innerHTML = `<input value="${escapeHtml(rec.title||'')}">`;
       descTd.innerHTML = `<input value="${escapeHtml(rec.description||'')}">`;
       ownerTd.innerHTML = `<input value="${escapeHtml(rec.owner||'')}">`;
       dueTd.innerHTML = `<input type="date" value="${rawDate}">`;
@@ -558,35 +827,50 @@
       `;
 
       actionTd.querySelector('.saveBtn').addEventListener('click', ()=>{
+        const newTitle = titleTd.querySelector('input').value.trim();
         const newDesc = descTd.querySelector('input').value.trim();
         const newOwner = ownerTd.querySelector('input').value.trim();
-        const newDue = dueTd.querySelector('input').value || null; // store exact input (no timezone conversion)
-        updateRec(aid, rid, { description: newDesc, owner: newOwner, dueDate: newDue });
+        const newDue = dueTd.querySelector('input').value || null; // exact date
+        updateRec(aid, rid, { title: newTitle, description: newDesc, owner: newOwner, dueDate: newDue });
         refreshAll();
       });
       actionTd.querySelector('.cancelBtn').addEventListener('click', ()=>{ refreshAll(); });
     }
 
+    searchInput.addEventListener('input', renderList);
+    statusFilter.addEventListener('change', renderList);
+    clearFilters.addEventListener('click', ()=>{ searchInput.value=''; statusFilter.value=''; renderList(); });
+
     // -----------------------
-    // Dashboard KPIs + Chart + Urgent Table
+    // Dashboard KPIs + Chart + Urgent Table + Metrics
     // -----------------------
     const kpiDueSoon = document.getElementById('kpiDueSoon');
     const kpiOverdue = document.getElementById('kpiOverdue');
     const kpiTotal = document.getElementById('kpiTotal');
+    const kpiOnTime = document.getElementById('kpiOnTime');
+    const kpiAvgAge = document.getElementById('kpiAvgAge');
+    const kpiReopened = document.getElementById('kpiReopened');
     const urgentTableBody = document.querySelector('#urgentTable tbody');
+    const medianTableBody = document.querySelector('#medianTable tbody');
+    const stageTableBody = document.querySelector('#stageTable tbody');
+    const bottleneckSummary = document.getElementById('bottleneckSummary');
 
     function flattenRecs(){
       const out = [];
-      state.audits.forEach(a=> (a.recommendations||[]).forEach(r=> out.push({ audit:a, rec:r })) );
+      state.audits.forEach(a=>
+        (a.recommendations||[]).forEach(r=>{
+          ensureDefaults(r);
+          out.push({ audit:a, rec:r })
+        })
+      );
       return out;
     }
 
     function getStatus(rec){
       if(rec.status === 'Closed') return 'ok';
       if(!rec.dueDate) return 'ok';
-      // interpret stored YYYY-MM-DD as local date without TZ shift
-      const [y,m,d] = rec.dueDate.split('-').map(n=>parseInt(n,10));
-      const due = new Date(y, m-1, d);
+      const due = parseYMD(rec.dueDate);
+      if(!due) return 'ok';
       const today = new Date(); today.setHours(0,0,0,0);
       const diffDays = Math.floor((due - today) / (1000*60*60*24));
       if(diffDays < 0) return 'overdue';
@@ -611,11 +895,38 @@
       kpiOverdue.textContent = String(overdue);
       kpiTotal.textContent = String(total);
 
-      // Urgent table (overdue + due soon, top 10 by date asc)
+      // On-time closure rate, average age, reopened rate
+      const today = new Date();
+      const closed = rows.filter(x=> x.rec.status === 'Closed' && x.rec.closedAt);
+      let onTimeNumerator = 0;
+      closed.forEach(x=>{
+        if(x.rec.dueDate && x.rec.closedAt){
+          const closedDate = parseYMD(x.rec.closedAt);
+          const dueDate = parseYMD(x.rec.dueDate);
+          if(closedDate && dueDate && closedDate <= dueDate) onTimeNumerator++;
+        }
+      });
+      const onTimeRate = closed.length ? (onTimeNumerator / closed.length * 100) : 0;
+
+      const openRecs = rows.filter(x=> x.rec.status !== 'Closed');
+      const ages = openRecs.map(x=>{
+        const d = daysBetween(x.rec.createdAt, today);
+        return d==null ? 0 : d;
+      }).filter(x=>x!=null);
+      const avgAge = ages.length ? (ages.reduce((a,b)=>a+b,0)/ages.length) : 0;
+
+      const reopenedCount = rows.filter(x=> (x.rec.reopenCount||0) > 0).length;
+      const reopenedRate = total ? (reopenedCount / total * 100) : 0;
+
+      kpiOnTime.textContent = `${onTimeRate.toFixed(0)}%`;
+      kpiAvgAge.textContent = avgAge.toFixed(0);
+      kpiReopened.textContent = `${reopenedRate.toFixed(0)}%`;
+
+      // Urgent table
       const urgent = rows.filter(x=> ['overdue','soon'].includes(getStatus(x.rec)) && x.rec.status!=='Closed')
                          .sort((a,b)=> {
-                           const aD = a.rec.dueDate ? new Date(a.rec.dueDate) : new Date('2099-12-31');
-                           const bD = b.rec.dueDate ? new Date(b.rec.dueDate) : new Date('2099-12-31');
+                           const aD = a.rec.dueDate ? parseYMD(a.rec.dueDate) : new Date('2099-12-31');
+                           const bD = b.rec.dueDate ? parseYMD(b.rec.dueDate) : new Date('2099-12-31');
                            return aD - bD;
                          })
                          .slice(0,10);
@@ -624,43 +935,106 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${escapeHtml(audit.auditNumber)}</td>
-          <td>${escapeHtml(rec.description||'')}</td>
+          <td>${escapeHtml(rec.title || rec.description || '')}</td>
           <td>${rec.dueDate? niceDate(rec.dueDate):'<span class="muted">—</span>'}</td>
           <td>${statusBadge(rec)}</td>
         `;
         urgentTableBody.appendChild(tr);
       });
 
-      // Chart: buckets by month (next 6 months)
-      const labels = [];
-      const counts = [];
-      const today = new Date();
-      for(let i=0;i<6;i++){
-        const d = new Date(today.getFullYear(), today.getMonth()+i, 1);
-        const label = d.toLocaleDateString(undefined, { month:'short', year:'2-digit' });
-        labels.push(label);
-        const month = d.getMonth();
-        const year = d.getFullYear();
-        counts.push(rows.filter(x=>{
-          if(!x.rec.dueDate) return false;
-          const [yy,mm,dd] = x.rec.dueDate.split('-').map(n=>parseInt(n,10));
-          const ddLocal = new Date(yy, mm-1, dd);
-          return ddLocal.getMonth()===month && ddLocal.getFullYear()===year && x.rec.status!=='Closed';
-        }).length);
-      }
+      // Residual risk profile: open recommendations by risk rating
+      const riskRatings = ['Low','Medium','High','Critical'];
+      const counts = riskRatings.map(rr =>
+        rows.filter(x=> x.rec.status!=='Closed' && (x.rec.riskRating || '').toLowerCase() === rr.toLowerCase()).length
+      );
 
       const ctx = document.getElementById('barChart');
       if(barChart) barChart.destroy();
       barChart = new Chart(ctx, {
         type: 'bar',
-        data: { labels, datasets: [{ label: 'Open Recommendations Due', data: counts }] },
+        data: { labels: riskRatings, datasets: [{ label: 'Open Recommendations', data: counts }] },
         options: {
           responsive:true,
-          maintainAspectRatio:true, // respects our wrapper height
+          maintainAspectRatio:true,
           plugins:{ legend:{ display:true } },
           scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } }
         }
       });
+
+      // Median days to close by risk rating
+      const medRows = {};
+      riskRatings.forEach(rr => { medRows[rr] = []; });
+      closed.forEach(x=>{
+        const rec = x.rec;
+        const rr = rec.riskRating || 'Unrated';
+        const dur = (rec.createdAt && rec.closedAt) ? daysBetween(rec.createdAt, parseYMD(rec.closedAt)) : null;
+        if(dur!=null){
+          if(!medRows[rr]) medRows[rr] = [];
+          medRows[rr].push(dur);
+        }
+      });
+      medianTableBody.innerHTML = '';
+      Object.keys(medRows).forEach(rr=>{
+        const arr = medRows[rr];
+        if(!arr.length) return;
+        arr.sort((a,b)=>a-b);
+        const mid = Math.floor(arr.length/2);
+        const median = arr.length % 2 ? arr[mid] : (arr[mid-1]+arr[mid])/2;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${rr}</td><td>${median.toFixed(0)}</td>`;
+        medianTableBody.appendChild(tr);
+      });
+      if(!medianTableBody.children.length){
+        medianTableBody.innerHTML = `<tr><td colspan="2" class="muted">No closed recommendations yet.</td></tr>`;
+      }
+
+      // Time in stage (avg days since lastStatusChangeAt by status)
+      const stages = {};
+      rows.forEach(x=>{
+        const rec = x.rec;
+        const d = daysBetween(rec.lastStatusChangeAt, today);
+        if(d==null) return;
+        if(!stages[rec.status]) stages[rec.status] = [];
+        stages[rec.status].push(d);
+      });
+      stageTableBody.innerHTML = '';
+      let bottleneckStatus = null;
+      let bottleneckDays = -1;
+      Object.keys(stages).forEach(st=>{
+        const arr = stages[st];
+        if(!arr.length) return;
+        const avg = arr.reduce((a,b)=>a+b,0)/arr.length;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${st}</td><td>${avg.toFixed(1)}</td>`;
+        stageTableBody.appendChild(tr);
+        if(avg > bottleneckDays){
+          bottleneckStatus = st;
+          bottleneckDays = avg;
+        }
+      });
+      if(!stageTableBody.children.length){
+        stageTableBody.innerHTML = `<tr><td colspan="2" class="muted">No status timing data yet.</td></tr>`;
+      }
+
+      // Bottleneck summary
+      const openByRisk = {};
+      rows.filter(x=> x.rec.status!=='Closed').forEach(x=>{
+        const rr = x.rec.riskRating || 'Unrated';
+        openByRisk[rr] = (openByRisk[rr]||0)+1;
+      });
+      const topRisk = Object.entries(openByRisk).sort((a,b)=>b[1]-a[1])[0];
+      const parts = [];
+      if(bottleneckStatus){
+        parts.push(`Current bottleneck appears at <strong>${bottleneckStatus}</strong> (avg ~${bottleneckDays.toFixed(1)} days in stage).`);
+      }
+      if(topRisk){
+        parts.push(`Highest open residual risk: <strong>${topRisk[0]}</strong> (${topRisk[1]} open).`);
+      }
+      if(!parts.length){
+        bottleneckSummary.innerHTML = 'Not enough data yet to analyze bottlenecks or residual risk.';
+      }else{
+        bottleneckSummary.innerHTML = parts.join('<br>');
+      }
     }
 
     // -----------------------
@@ -692,18 +1066,55 @@
 
     function refreshAll(){ renderDashboard(); renderList(); populateExistingAuditSelect(); }
 
-    // Seed example data for first-time UX
+    // Seed simple example data for first-time UX
     function maybeSeed(){
       if(state.audits.length) return;
+      const today = todayYMD();
       const seed = {
         audits: [
           { id: uid(), auditNumber:'2025-001', auditName:'Procure-to-Pay (P2P)', recommendations:[
-            { id: uid(), description:'Enable 3-way match for invoices > $10k', owner:'AP Manager', dueDate: nextDate(10), status:'Open' },
-            { id: uid(), description:'Vendor master change approvals in workflow', owner:'Vendor Ops', dueDate: nextDate(-5), status:'In Progress' }
+            {
+              id: uid(), title:'Enable 3-way match for invoices > $10k',
+              description:'Configure system to require 3-way match for high-value invoices.',
+              owner:'AP Manager', dueDate: nextDate(10), status:'Open',
+              createdAt: today, closedAt:null, lastStatusChangeAt:today, reopenCount:0,
+              riskRating:'High', likelihood:'Medium', impact:'High',
+              rootCause:'Manual approval process, no automated 3-way match.',
+              controlId:'P2P-CTRL-001', regulatoryMapping:'SOX 404',
+              processesSystems:'P2P, SAP', geography:'Global', businessUnit:'Corporate'
+            },
+            {
+              id: uid(), title:'Vendor master change approvals in workflow',
+              description:'Route vendor master changes through automated approval workflow.',
+              owner:'Vendor Ops', dueDate: nextDate(-5), status:'In Progress',
+              createdAt: today, closedAt:null, lastStatusChangeAt:today, reopenCount:0,
+              riskRating:'Medium', likelihood:'Medium', impact:'Medium',
+              rootCause:'Decentralized vendor master maintenance.',
+              controlId:'P2P-CTRL-005', regulatoryMapping:'SOX 404',
+              processesSystems:'Vendor Master, SAP', geography:'US', businessUnit:'Operations'
+            }
           ]},
           { id: uid(), auditNumber:'2025-007', auditName:'Access Management', recommendations:[
-            { id: uid(), description:'Quarterly access reviews for privileged roles', owner:'IAM Lead', dueDate: nextDate(3), status:'Open' },
-            { id: uid(), description:'Automate leaver termination feed', owner:'HRIS', dueDate: nextDate(45), status:'Open' }
+            {
+              id: uid(), title:'Quarterly access reviews for privileged roles',
+              description:'Implement quarterly review of privileged access for critical systems.',
+              owner:'IAM Lead', dueDate: nextDate(3), status:'Open',
+              createdAt: today, closedAt:null, lastStatusChangeAt:today, reopenCount:0,
+              riskRating:'Critical', likelihood:'High', impact:'Severe',
+              rootCause:'Reviews performed ad hoc, not centrally tracked.',
+              controlId:'IAM-CTRL-010', regulatoryMapping:'SOX 404, ISO 27001',
+              processesSystems:'IAM, Active Directory', geography:'Global', businessUnit:'IT Security'
+            },
+            {
+              id: uid(), title:'Automate leaver termination feed',
+              description:'Automate daily leaver feed from HRIS to IAM systems.',
+              owner:'HRIS', dueDate: nextDate(45), status:'Open',
+              createdAt: today, closedAt:null, lastStatusChangeAt:today, reopenCount:0,
+              riskRating:'High', likelihood:'High', impact:'High',
+              rootCause:'Manual deprovisioning of leavers.',
+              controlId:'IAM-CTRL-015', regulatoryMapping:'SOX 404',
+              processesSystems:'HRIS, IAM', geography:'Global', businessUnit:'HR / IT'
+            }
           ]}
         ]
       };
