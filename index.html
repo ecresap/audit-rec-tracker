@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Audit Recommendation Tracker</title>
+  <title>Audit Recommendation Tracker Pro (Enhanced UI)</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     :root{
-      --bg: #f7f7f4;            /* off white */
+      --bg: #f7f7f4;            
       --card: #ffffff;
-      --ink: #1f2937;           /* gray-800 */
-      --muted:#6b7280;          /* gray-500 */
-      --accent:#3b82f6;         /* blue-500 */
-      --accent-600:#2563eb;     /* blue-600 */
-      --good:#10b981;           /* emerald-500 */
-      --warn:#f59e0b;           /* amber-500 */
-      --bad:#ef4444;            /* red-500 */
+      --ink: #1f2937;           
+      --muted:#6b7280;          
+      --accent:#3b82f6;         
+      --accent-600:#2563eb;     
+      --good:#10b981;           
+      --warn:#f59e0b;           
+      --bad:#ef4444;            
       --shadow: 0 10px 24px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.06);
       --shadow-soft: 0 6px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.05);
       --radius: 16px;
@@ -28,169 +28,161 @@
     body{
       margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
       background: var(--bg); color: var(--ink);
+      line-height: 1.5;
     }
-    .container{max-width:1300px; margin: 0 auto; padding: 24px;}
+    .container{max-width:1400px; margin: 0 auto; padding: 32px;} /* Increased padding for breathing room */
+    
     header{
-      position: sticky; top:0; z-index: 50; backdrop-filter: blur(8px);
-      background: rgba(247,247,244,0.8); border-bottom: 1px solid #eee;
+      position: sticky; top:0; z-index: 50; backdrop-filter: blur(12px);
+      background: rgba(247,247,244,0.9); border-bottom: 1px solid #e5e7eb;
+      padding: 12px 0;
     }
-    .brand{display:flex; gap:12px; align-items:center; font-weight:700; font-size:20px}
-    .nav{
-      display:flex; gap:10px; flex-wrap: wrap; align-items:center;
-    }
-    .row{display:flex; gap:16px; flex-wrap:wrap; align-items:center; justify-content:space-between}
+    .brand{display:flex; gap:12px; align-items:center; font-weight:700; font-size:22px; color: var(--accent-600);}
+    
+    /* Navigation & Buttons */
+    .nav{ display:flex; gap:12px; flex-wrap: wrap; align-items:center; }
+    .row{display:flex; gap:20px; flex-wrap:wrap; align-items:center; justify-content:space-between}
+    
     .btn{
-      appearance:none; border:none; cursor:pointer; padding:12px 16px; border-radius: var(--radius-sm);
-      background: var(--card); color: var(--ink); box-shadow: var(--shadow-soft);
-      transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+      appearance:none; border:none; cursor:pointer; padding:10px 18px; border-radius: var(--radius-sm);
+      background: var(--card); color: var(--ink); box-shadow: var(--shadow-soft); border: 1px solid transparent;
+      transition: all var(--transition);
+      font-size: 14px; font-weight: 600;
+      white-space: nowrap; /* Keep button text from folding */
     }
-    .btn:hover{ transform: translateY(-2px); box-shadow: var(--shadow); }
-    .btn:active{ transform: translateY(0); }
-    .btn.primary{ background: linear-gradient(180deg, var(--accent), var(--accent-600)); color:#fff; }
-    .btn.good{ background: linear-gradient(180deg, var(--good), #059669); color:#fff; }
-    .btn.warn{ background: linear-gradient(180deg, var(--warn), #d97706); color:#fff; }
-    .btn.bad{ background: linear-gradient(180deg, var(--bad), #b91c1c); color:#fff; }
-    .btn.editBtn{
-      background: linear-gradient(180deg,#facc15,#eab308);
-      color:#78350f;
-    }
-    .btn:disabled{ opacity: 0.6; cursor: not-allowed; transform:none !important; }
+    .btn:hover{ transform: translateY(-2px); box-shadow: var(--shadow); border-color:#e5e7eb; }
+    .btn.primary{ background: linear-gradient(180deg, var(--accent), var(--accent-600)); color:#fff; border:none; }
+    .btn.good{ background: linear-gradient(180deg, var(--good), #059669); color:#fff; border:none; }
+    .btn.warn{ background: linear-gradient(180deg, var(--warn), #d97706); color:#fff; border:none; }
+    .btn.bad{ background: linear-gradient(180deg, var(--bad), #b91c1c); color:#fff; border:none; }
+    .btn.editBtn{ background: linear-gradient(180deg,#facc15,#eab308); color:#78350f; border:none; }
 
     .card{
       background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
-      padding: 18px; transition: transform var(--transition), box-shadow var(--transition);
+      padding: 24px; /* More padding inside cards */
+      transition: transform var(--transition);
+      height: 100%; /* Ensure cards match height in grid */
     }
-    .card:hover{ transform: translateY(-2px); box-shadow: 0 14px 32px rgba(0,0,0,.10), 0 3px 10px rgba(0,0,0,.08); }
-
-    .chips{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
-    .chip{padding:4px 10px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size:12px}
-
-    .kpi{
-      display:grid; grid-template-columns: repeat(12, 1fr); gap:16px; margin-top:16px;
+    
+    /* Inputs & Auto-Expanding Textareas */
+    .field{display:flex; flex-direction:column; gap:8px; margin-bottom:18px}
+    label{font-size:13px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;}
+    
+    input, select, textarea{
+      width:100%; padding:12px 14px; border-radius: var(--radius-xs); border: 1px solid #d1d5db; background:#fff;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+      transition: all var(--transition);
+      font-size: 14px;
+      font-family: inherit;
     }
-    .kpi .card{ padding:20px }
-    .kpi .value{ font-size:32px; font-weight:800; letter-spacing:.5px }
-    .kpi .label{ color: var(--muted); font-size:13px }
+    /* Auto-grow textareas logic relies on overflow-y:hidden to avoid scrollbars while growing */
+    textarea.auto-grow {
+        resize: vertical; /* Allow manual resize */
+        overflow-y: hidden; /* Hide scrollbar for auto-grow effect */
+        min-height: 48px;
+    }
+    input:focus, select:focus, textarea:focus{ outline:none; border-color: var(--accent); box-shadow: 0 0 0 4px rgba(59,130,246,0.15) }
 
-    .grid{ display:grid; grid-template-columns: repeat(12, 1fr); gap:16px; }
+    /* Tables - Fix for Text Cutoff */
+    .table-wrap { overflow-x: auto; padding-bottom: 10px; }
+    .table{ width:100%; border-collapse: separate; border-spacing: 0 8px; } /* Spaced rows */
+    .table th { 
+        padding: 0 12px 8px; 
+        color: var(--muted); font-weight:700; font-size:11px; text-transform: uppercase; letter-spacing:.05em; 
+        text-align:left; 
+    }
+    .table td {
+      background: #fff;
+      padding: 16px 12px; 
+      border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6;
+      font-size:14px; vertical-align: middle; /* Center vertically */
+      white-space: normal; /* CRITICAL: Allows text to wrap */
+      word-wrap: break-word; /* CRITICAL: Breaks long words if needed */
+    }
+    /* Add borders to sides of rows for card-look */
+    .table td:first-child { border-left: 1px solid #f3f4f6; border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+    .table td:last-child { border-right: 1px solid #f3f4f6; border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+
+    /* Dropdowns */
+    select {
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        padding-right: 30px; /* Space for arrow */
+        cursor: pointer;
+        min-width: 140px; /* Ensure small selects aren't too small */
+    }
+
+    /* Grid System */
+    .grid{ display:grid; grid-template-columns: repeat(12, 1fr); gap:24px; } /* Increased gap */
     .span-12{grid-column: span 12}
     .span-8{grid-column: span 8}
     .span-6{grid-column: span 6}
     .span-4{grid-column: span 4}
     .span-3{grid-column: span 3}
-    @media (max-width: 1024px){
-      .span-8,.span-6,.span-4,.span-3,.span-12{grid-column:span 12}
-    }
+    @media (max-width: 1024px){ .span-8,.span-6,.span-4,.span-3,.span-12{grid-column:span 12} }
 
-    .field{display:flex; flex-direction:column; gap:8px; margin-bottom:14px}
-    label{font-size:13px; color: var(--muted)}
-    input, select, textarea{
-      width:100%; padding:10px 12px; border-radius: var(--radius-xs); border: 1px solid #e5e7eb; background:#fff;
-      box-shadow: inset 0 1px 0 rgba(0,0,0,0.02);
-      transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
-      font-size: 14px;
-    }
-    textarea{min-height:60px; resize:vertical}
-    input:focus, select:focus, textarea:focus{ outline:none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.15) }
-
-    .toolbar{display:flex; gap:10px; align-items:center; justify-content:space-between; margin: 18px 0; flex-wrap: wrap}
-    .search{ flex:1; min-width: 220px }
-
-    .list{ display:grid; gap:12px }
-    .audit-card{ padding:0 }
-    .audit-head{ display:flex; justify-content:space-between; align-items:center; padding:16px 18px; border-bottom:1px solid #eee }
-    .audit-body{ padding:12px 18px; overflow-x: auto; }
-
-    .table{ width:100%; border-collapse: collapse }
-    .table th, .table td{
-      padding:8px 6px; border-bottom: 1px dashed #e5e7eb; text-align:left; font-size:13px;
-      vertical-align: top;
-    }
-    .table th{ color: var(--muted); font-weight:600; font-size:11px; text-transform: uppercase; letter-spacing:.08em }
-
-    .status{ font-size:12px; padding:4px 8px; border-radius: 999px; display:inline-block; }
-    .status.overdue{ background:#fee2e2; color:#991b1b }
-    .status.soon{ background:#ffedd5; color:#9a3412 }
-    .status.ok{ background:#e5f9ef; color:#065f46 }
+    /* Utility */
+    .toolbar{display:flex; gap:16px; align-items:center; justify-content:space-between; margin: 24px 0; flex-wrap: wrap}
+    .search{ flex:1; min-width: 250px; padding: 12px; }
     
-    /* Requirement #5: Fix spacing for status dropdown */
-    select.status-inline {
-        width: auto;
-        min-width: 120px; /* Ensure "In Progress" fits */
-        padding-right: 24px;
-    }
-
     .hidden{ display:none !important }
     .muted{ color: var(--muted) }
-    .section{ display:none }
+    .section{ display:none; animation: fadeIn 0.3s ease; }
     .section.active{ display:block }
+    @keyframes fadeIn { from{opacity:0; transform:translateY(5px)} to{opacity:1; transform:translateY(0)} }
 
-    .footer{ color: var(--muted); font-size:12px; text-align:center; padding:18px 0 36px }
+    .kpi{ display:grid; grid-template-columns: repeat(12, 1fr); gap:24px; margin-top:16px; }
+    .kpi .card{ padding:24px; display:flex; flex-direction:column; justify-content:center; }
+    .kpi .value{ font-size:36px; font-weight:800; letter-spacing:-1px; color: var(--ink); }
+    .kpi .label{ color: var(--muted); font-size:13px; font-weight:600; text-transform: uppercase; }
 
-    /* Chart container fixed to keep one-screen height */
-    .chart-wrap{ height: 360px; max-height: 65vh; }
-    #barChart{ width:100%; height:100% !important; display:block }
-
-    .meta-row td,
-    .meta-edit-row td{
-      background:#f9fafb;
-    }
-
-    /* Risk chips */
-    .risk-chip{
-      display:inline-block;
-      padding:3px 8px;
-      border-radius:999px;
-      font-size:11px;
-      font-weight:600;
-      letter-spacing:.03em;
-      text-transform:uppercase;
-    }
-    .risk-low{ background:#ecfdf5; color:#047857; }
-    .risk-medium{ background:#fef3c7; color:#92400e; }
-    .risk-high{ background:#fee2e2; color:#b91c1c; }
-    .risk-critical{ background:#1f2937; color:#fef2f2; }
-
-    /* No-wrap for short cells */
-    .ownerCell, .dueCell, .riskCell{ white-space: nowrap; }
+    .chart-wrap{ height: 350px; position: relative; width: 100%; }
     
-    /* Workflow Box Styles */
-    .workflow-box {
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: var(--radius-sm);
-        padding: 12px;
-        margin-bottom: 12px;
-        border-left: 4px solid var(--accent);
-    }
-    .workflow-status-line { margin-bottom: 8px; font-weight: 600; font-size: 13px; }
-    .workflow-actions { display: flex; gap: 8px; align-items: center; }
-    .stamp { font-size: 12px; color: var(--muted); display: block; margin-top: 4px; font-style: italic; }
+    /* Tags & Status */
+    .risk-chip{ display:inline-block; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em; white-space: nowrap; }
+    .risk-low{ background:#ecfdf5; color:#047857; border: 1px solid #d1fae5; }
+    .risk-medium{ background:#fffbeb; color:#b45309; border: 1px solid #fde68a; }
+    .risk-high{ background:#fef2f2; color:#b91c1c; border: 1px solid #fecaca; }
+    .risk-critical{ background:#1f2937; color:#f3f4f6; border: 1px solid #000; }
+    
+    .status { display:inline-block; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .status-Open { background: #eff6ff; color: #1e40af; border: 1px solid #dbeafe; }
+    .status-InProgress { background: #fff7ed; color: #9a3412; border: 1px solid #ffedd5; }
+    .status-Closed { background: #f0fdf4; color: #166534; border: 1px solid #dcfce7; }
 
+    /* Slippage & Workflow styling */
+    .slippage-warn { color: var(--warn); font-weight: 700; font-size: 11px; display: block; margin-top: 4px; }
+    .workflow-box {
+        background: #fafafa; border: 1px solid #e5e7eb; border-radius: var(--radius-sm);
+        padding: 20px; margin-bottom: 20px; border-left: 5px solid var(--accent);
+    }
+    .workflow-status-line { margin-bottom: 12px; font-weight: 700; font-size: 14px; }
+    .workflow-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+    .stamp { font-size: 12px; color: var(--muted); display: block; margin-top: 6px; font-style: italic; }
+
+    .validation-required { border: 2px solid var(--bad) !important; background: #fff5f5; }
+
+    .footer{ color: var(--muted); font-size:13px; text-align:center; padding: 40px 0; border-top: 1px solid #e5e7eb; margin-top: 40px; }
   </style>
 </head>
 <body>
   <header>
     <div class="container row">
-      <div class="brand">📊 Audit Recommendation Tracker</div>
+      <div class="brand">📊 Audit Tracker Pro</div>
       <nav class="nav">
         <button class="btn" data-nav="dashboard">Dashboard</button>
         <button class="btn" data-nav="input">Input</button>
-        <button class="btn" data-nav="list">Recommendation List</button>
-        <button class="btn" id="exportBtn" title="Export data as JSON">Export</button>
-        <label class="btn" for="importFile" title="Import data from JSON" style="cursor:pointer">Import<input id="importFile" type="file" accept="application/json" style="display:none"></label>
+        <button class="btn" data-nav="list">Rec. List</button>
+        <div style="width:1px; height:24px; background:#e5e7eb; margin:0 8px"></div>
+        <button class="btn" id="exportCsvBtn" title="Download CSV for Excel">📄 Export CSV</button>
+        <button class="btn" id="exportJsonBtn" title="Backup JSON">💾 Backup</button>
+        <label class="btn" for="importFile" title="Restore JSON" style="cursor:pointer">📂 Restore<input id="importFile" type="file" accept="application/json" style="display:none"></label>
       </nav>
     </div>
   </header>
 
   <main class="container">
     <section id="dashboard" class="section active">
-      <div class="chips" style="margin-top:8px">
-        <span class="chip">Off-white UI</span>
-        <span class="chip">Process Workflow</span>
-        <span class="chip">Validation Cycles</span>
-      </div>
-
       <div class="kpi">
         <div class="card span-4">
           <div class="label">Due within 7 days</div>
@@ -198,67 +190,26 @@
         </div>
         <div class="card span-4">
           <div class="label">Overdue</div>
-          <div id="kpiOverdue" class="value">0</div>
+          <div id="kpiOverdue" class="value" style="color:var(--bad)">0</div>
         </div>
         <div class="card span-4">
           <div class="label">Total Recommendations</div>
           <div id="kpiTotal" class="value">0</div>
         </div>
       </div>
-
-      <div class="kpi">
-        <div class="card span-4">
-          <div class="label">On-time Closure Rate</div>
-          <div id="kpiOnTime" class="value">0%</div>
-        </div>
-        <div class="card span-4">
-          <div class="label">Average Age (Open, days)</div>
-          <div id="kpiAvgAge" class="value">0</div>
-        </div>
-        <div class="card span-4">
-          <div class="label">Reopened Rate</div>
-          <div id="kpiReopened" class="value">0%</div>
-        </div>
-      </div>
-
-      <div class="grid" style="margin-top:16px">
+      <div class="grid" style="margin-top:24px">
         <div class="card span-8">
-          <h3 style="margin:4px 0 4px">Residual Risk Profile</h3>
-          <p class="muted" style="margin:0 0 14px">Open recommendations by risk rating (snapshot).</p>
+          <h3 style="margin:0 0 16px">Residual Risk Profile</h3>
           <div class="chart-wrap"><canvas id="barChart"></canvas></div>
         </div>
         <div class="card span-4">
-          <h3 style="margin:4px 0 4px">Urgent Queue</h3>
-          <p class="muted" style="margin:0 0 10px">Due soon or overdue (next 10).</p>
-          <table class="table" id="urgentTable">
-            <thead>
-              <tr><th>Audit</th><th>Recommendation</th><th>Due</th><th>Status</th></tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="card span-12" style="margin-top:16px">
-        <h3 style="margin:4px 0 10px">Quality & Bottleneck Analysis</h3>
-        <div class="grid">
-          <div class="span-4">
-            <h4 style="margin:0 0 6px;font-size:14px">Median Days to Close (by Risk)</h4>
-            <table class="table" id="medianTable">
-              <thead><tr><th>Risk Rating</th><th>Median Days</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-          <div class="span-4">
-            <h4 style="margin:0 0 6px;font-size:14px">Time in Stage (Avg Days)</h4>
-            <table class="table" id="stageTable">
-              <thead><tr><th>Status</th><th>Avg Days</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-          <div class="span-4">
-            <h4 style="margin:0 0 6px;font-size:14px">Bottleneck & Open Risk</h4>
-            <div id="bottleneckSummary" class="muted" style="font-size:13px"></div>
+          <h3 style="margin:0 0 8px">Validation Queue</h3>
+          <p class="muted" style="margin:0 0 16px; font-size:13px;">Prepared items waiting for review.</p>
+          <div class="table-wrap">
+              <table class="table" id="validationQueueTable">
+                <thead><tr><th>Audit</th><th>Rec</th><th>Prepared By</th></tr></thead>
+                <tbody></tbody>
+              </table>
           </div>
         </div>
       </div>
@@ -267,123 +218,38 @@
     <section id="input" class="section">
       <div class="grid">
         <div class="card span-12">
-          <h3 style="margin:4px 0 14px">Add New Audit & Multiple Recommendations</h3>
+          <h3 style="margin:0 0 20px">Create New Audit</h3>
           <div class="grid">
-            <div class="span-6">
-              <div class="field">
-                <label for="auditNumber">Audit Number</label>
-                <input id="auditNumber" placeholder="e.g., 2025-012" />
-              </div>
-            </div>
-            <div class="span-6">
-              <div class="field">
-                <label for="auditName">Audit Name</label>
-                <input id="auditName" placeholder="e.g., Procure-to-Pay Review" />
-              </div>
-            </div>
-
+            <div class="span-6"><div class="field"><label>Audit Number</label><input id="auditNumber" placeholder="e.g., 2025-012" /></div></div>
+            <div class="span-6"><div class="field"><label>Audit Name</label><input id="auditName" placeholder="e.g., Procure-to-Pay Review" /></div></div>
+            
             <div class="span-12">
               <div class="toolbar">
-                <div class="muted">
-                  Add rows for recommendations. Expand "Full Metadata" for more details.
-                </div>
-                <button class="btn" id="addRowBtn">+ Add Row</button>
+                <div class="muted"><strong>Recommendations:</strong> Add rows below. Typing in "Description" will expand the box automatically.</div>
+                <button class="btn" id="addRowBtn">+ Add Recommendation Row</button>
               </div>
-              <div class="card" style="padding:0">
+              
+              <div class="table-wrap">
                 <table class="table" id="recTable">
                   <thead>
                     <tr>
-                      <th style="width:25%">Description</th>
-                      <th style="width:15%">Process Owner</th>
-                      <th style="width:15%">Audit Rec. Owner</th>
+                      <th style="width:30%">Description (Auto-Expands)</th>
+                      <th style="width:15%">Owner</th>
                       <th style="width:12%">Due Date</th>
-                      <th style="width:10%">Status</th>
-                      <th style="width:10%">Risk</th>
-                      <th style="width:8%">Details</th>
-                      <th style="width:5%">Del</th>
+                      <th style="width:12%">Risk</th>
+                      <th style="width:12%">Root Cause</th>
+                      <th style="width:10%">Details</th>
+                      <th style="width:5%"></th>
                     </tr>
                   </thead>
                   <tbody></tbody>
                 </table>
               </div>
-              <div style="display:flex; gap:10px; margin-top:14px">
-                <button class="btn primary" id="saveAuditBtn">Save Audit</button>
-                <button class="btn" id="clearNewAuditForm">Clear</button>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <div class="card span-12">
-          <h3 style="margin:4px 0 14px">Add Recommendation to Existing Audit (Full Metadata)</h3>
-          <div class="grid">
-            <div class="span-12">
-              <div class="field">
-                <label for="existingAuditSelect">Select Audit</label>
-                <select id="existingAuditSelect"></select>
+              <div style="display:flex; gap:16px; margin-top:24px">
+                <button class="btn primary" id="saveAuditBtn" style="padding: 14px 24px; font-size:15px;">Save Audit & Recs</button>
+                <button class="btn" id="clearNewAuditForm">Clear Form</button>
               </div>
-            </div>
-
-            <div class="span-12">
-              <div class="field">
-                <label for="newRecTitle">Title</label>
-                <input id="newRecTitle" placeholder="e.g., Implement 3-way match control" />
-              </div>
-            </div>
-
-            <div class="span-12">
-              <div class="field">
-                <label for="newRecDesc">Description</label>
-                <textarea id="newRecDesc" placeholder="More detailed description of the recommendation"></textarea>
-              </div>
-            </div>
-
-            <div class="span-6">
-              <div class="field">
-                <label for="newRecOwner">Process Owner</label>
-                <input id="newRecOwner" placeholder="e.g., AP Manager" />
-              </div>
-            </div>
-             <div class="span-6">
-              <div class="field">
-                <label for="newRecAuditOwner">Audit Rec. Owner</label>
-                <input id="newRecAuditOwner" placeholder="Auditor Name" />
-              </div>
-            </div>
-
-            <div class="span-6">
-              <div class="field">
-                <label for="newRecDue">Due Date</label>
-                <input id="newRecDue" type="date" />
-              </div>
-            </div>
-
-            <div class="span-6">
-              <div class="field">
-                <label for="newRecStatus">Status</label>
-                <select id="newRecStatus">
-                  <option value="Open">Open</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Closed">Closed</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="span-12">
-              <div class="field">
-                <label for="newRecRisk">Risk Rating</label>
-                <select id="newRecRisk">
-                  <option value="">(none)</option>
-                  <option>Low</option>
-                  <option>Medium</option>
-                  <option>High</option>
-                  <option>Critical</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="span-12">
-                <button class="btn primary" id="addToExistingBtn">Add to Audit</button>
             </div>
           </div>
         </div>
@@ -392,35 +258,38 @@
 
     <section id="list" class="section">
       <div class="toolbar">
-        <input id="search" class="search" placeholder="Search by audit number, name, owner, recommendation…" />
-        <div style="display:flex; gap:8px; flex-wrap:wrap">
-          <select id="ownerFilter">
-            <option value="">All Process Owners</option>
-          </select>
+        <input id="search" class="search" placeholder="Search by audit, owner, recommendation..." />
+        <div style="display:flex; gap:12px; flex-wrap:wrap">
+          <select id="ownerFilter"><option value="">All Process Owners</option></select>
           <select id="statusFilter">
             <option value="">All Statuses</option>
             <option>Open</option>
             <option>In Progress</option>
             <option>Closed</option>
           </select>
-          <button class="btn" id="clearFilters">Clear Filters</button>
+          <button class="btn" id="clearFilters">Reset Filters</button>
         </div>
       </div>
-
-      <div id="listContainer" class="list"></div>
+      <div id="listContainer" class="list" style="display:grid; gap:24px;"></div>
     </section>
   </main>
 
-  <div class="footer">Data is stored locally in your browser (localStorage). Use Export/Import to back up or move between devices.</div>
+  <div class="footer">
+    Audit Recommendation Tracker Pro &bull; Data is stored locally in your browser.
+  </div>
 
   <script>
     // -----------------------
-    // Basic Data Layer
+    // Data Layer & Utils
     // -----------------------
-    const STORAGE_KEY = 'auditTrackerData_v3_updated';
-
+    const STORAGE_KEY = 'auditTrackerData_Pro_v2_UI';
     const uid = () => Math.random().toString(36).slice(2,9)+Date.now().toString(36);
     const todayYMD = () => new Date().toISOString().slice(0,10);
+    const niceDate = (d) => {
+       if(!d) return '';
+       const [y,m,day] = d.split('-').map(x=>parseInt(x,10));
+       return new Date(y, (m-1), day).toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' });
+    };
 
     function load(){
       try{
@@ -429,10 +298,9 @@
         const data = JSON.parse(raw);
         if(!data.audits) data.audits = [];
         return data;
-      }catch(e){ console.error('Load failed', e); return { audits: [] } }
+      }catch(e){ console.error(e); return { audits: [] } }
     }
     function save(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
-
     let state = load();
 
     // -----------------------
@@ -445,579 +313,462 @@
     };
     document.querySelectorAll('[data-nav]').forEach(btn => {
       btn.addEventListener('click', () => {
-        const dest = btn.getAttribute('data-nav');
         Object.values(sections).forEach(s => s.classList.remove('active'));
-        sections[dest].classList.add('active');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        sections[btn.getAttribute('data-nav')].classList.add('active');
         refreshAll();
       })
     });
 
     // -----------------------
-    // Input: New Audit + Rows
+    // Auto-Expand Textarea Logic
+    // -----------------------
+    function attachAutoGrow(element) {
+        element.classList.add('auto-grow');
+        element.addEventListener('input', function() {
+            this.style.height = 'auto'; // Reset to recalculate
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+        // Init
+        setTimeout(()=>{ 
+            element.style.height = 'auto'; 
+            element.style.height = (element.scrollHeight) + 'px'; 
+        }, 10);
+    }
+
+    // -----------------------
+    // CSV Export Logic
+    // -----------------------
+    document.getElementById('exportCsvBtn').addEventListener('click', () => {
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "Audit Number,Audit Name,Rec Title,Rec Description,Process Owner,Audit Owner,Original Due Date,Revised Due Date,Status,Risk Rating,Root Cause Category,Validation Comment\n";
+      state.audits.forEach(audit => {
+        (audit.recommendations||[]).forEach(r => {
+           const esc = (t) => `"${String(t || '').replace(/"/g, '""')}"`;
+           const row = [
+             audit.auditNumber, audit.auditName, r.title, r.description, r.owner, r.auditRecOwner,
+             r.originalDueDate, r.revisedDueDate, r.status, r.riskRating, r.rootCauseCategory, r.validationComment
+           ].map(esc).join(",");
+           csvContent += row + "\r\n";
+        });
+      });
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `audit_tracker_export_${todayYMD()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    });
+
+    document.getElementById('exportJsonBtn').addEventListener('click', () => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+        const node = document.createElement('a');
+        node.setAttribute("href", dataStr);
+        node.setAttribute("download", "audit_backup.json");
+        document.body.appendChild(node);
+        node.click();
+        node.remove();
+    });
+
+    // -----------------------
+    // Input Logic
     // -----------------------
     const recTableBody = document.querySelector('#recTable tbody');
-    const addRowBtn = document.getElementById('addRowBtn');
-    const saveAuditBtn = document.getElementById('saveAuditBtn');
-    const clearNewAuditForm = document.getElementById('clearNewAuditForm');
-
+    
     function addRecRow(pref={}){
       const mainTr = document.createElement('tr');
       mainTr.className = 'main-row';
       mainTr.innerHTML = `
-        <td><input class="basic-desc" placeholder="Recommendation description" value="${pref.description||''}"></td>
-        <td><input class="basic-owner" placeholder="Process Owner" value="${pref.owner||''}"></td>
-        <td><input class="basic-audit-owner" placeholder="Audit Rec. Owner" value="${pref.auditRecOwner||''}"></td>
-        <td><input class="basic-due" type="date" value="${pref.dueDate||''}"></td>
+        <td><textarea class="basic-desc" placeholder="Recommendation description..." rows="1">${pref.description||''}</textarea></td>
+        <td><input class="basic-owner" placeholder="Owner Name" value="${pref.owner||''}"></td>
+        <td><input class="basic-due" type="date" value="${pref.dueDate||''}" title="Original Due Date"></td>
         <td>
-          <select class="basic-status status-inline">
-            <option ${pref.status==='Open'?'selected':''}>Open</option>
-            <option ${pref.status==='In Progress'?'selected':''}>In Progress</option>
-            <option ${pref.status==='Closed'?'selected':''}>Closed</option>
+          <select class="basic-risk">
+            <option value="">(Select Risk)</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+            <option value="Critical">Critical</option>
           </select>
         </td>
         <td>
-          <select class="basic-risk">
-            <option ${pref.riskRating===''?'selected':''} value="">(none)</option>
-            <option ${pref.riskRating==='Low'?'selected':''}>Low</option>
-            <option ${pref.riskRating==='Medium'?'selected':''}>Medium</option>
-            <option ${pref.riskRating==='High'?'selected':''}>High</option>
-            <option ${pref.riskRating==='Critical'?'selected':''}>Critical</option>
+          <select class="basic-rootcat">
+             <option value="">(Select Category)</option>
+             <option value="People">People</option>
+             <option value="Process">Process</option>
+             <option value="Technology">Technology</option>
+             <option value="External">External</option>
           </select>
         </td>
         <td><button class="btn fullMetaBtn" type="button">Details</button></td>
-        <td><button class="btn bad removeBtn" type="button" title="Remove row">✕</button></td>
+        <td><button class="btn bad removeBtn" type="button">✕</button></td>
       `;
+      // Attach auto-grow to description
+      attachAutoGrow(mainTr.querySelector('.basic-desc'));
 
       const metaTr = document.createElement('tr');
       metaTr.className = 'meta-row hidden';
       metaTr.innerHTML = `
-        <td colspan="8">
-          <div class="grid">
-             <div class="span-12"><div class="muted">Metadata</div></div>
-             <div class="span-12">
-               <div class="field"><label>Title</label><input class="meta-title" value="${pref.title||''}"></div>
-             </div>
-             <div class="span-12">
-               <div class="field"><label>Root Cause</label><textarea class="meta-rootCause">${pref.rootCause||''}</textarea></div>
-             </div>
-             <div class="span-6"><div class="field"><label>Likelihood</label><select class="meta-likelihood"><option value="">(none)</option><option>Low</option><option>Medium</option><option>High</option></select></div></div>
-             <div class="span-6"><div class="field"><label>Impact</label><select class="meta-impact"><option value="">(none)</option><option>Low</option><option>Medium</option><option>High</option><option>Severe</option></select></div></div>
-             <div class="span-12"><div class="field"><label>Management Response</label><textarea class="meta-mgmtResponse">${pref.managementResponse||''}</textarea></div></div>
+        <td colspan="7">
+          <div class="grid" style="padding:10px">
+             <div class="span-6"><div class="field"><label>Title (Short Summary)</label><input class="meta-title"></div></div>
+             <div class="span-6"><div class="field"><label>Audit Rec Owner</label><input class="meta-auditOwner"></div></div>
+             <div class="span-12"><div class="field"><label>Detailed Root Cause</label><textarea class="meta-rootCause" rows="2"></textarea></div></div>
+             <div class="span-12"><div class="field"><label>Management Response</label><textarea class="meta-mgmtResponse" rows="2"></textarea></div></div>
           </div>
         </td>
       `;
+      // Attach auto-grow to meta textareas
+      attachAutoGrow(metaTr.querySelector('.meta-rootCause'));
+      attachAutoGrow(metaTr.querySelector('.meta-mgmtResponse'));
 
-      mainTr.querySelector('.fullMetaBtn').addEventListener('click', ()=>{ metaTr.classList.toggle('hidden'); });
-      mainTr.querySelector('.removeBtn').addEventListener('click', ()=>{ metaTr.remove(); mainTr.remove(); });
-
+      mainTr.querySelector('.fullMetaBtn').addEventListener('click', ()=> metaTr.classList.toggle('hidden'));
+      mainTr.querySelector('.removeBtn').addEventListener('click', ()=> { metaTr.remove(); mainTr.remove(); });
       recTableBody.appendChild(mainTr);
       recTableBody.appendChild(metaTr);
     }
+    
+    // Init with one row
+    document.getElementById('addRowBtn').addEventListener('click', ()=>addRecRow());
+    document.getElementById('clearNewAuditForm').addEventListener('click', ()=> {
+        document.getElementById('auditNumber').value='';
+        document.getElementById('auditName').value='';
+        recTableBody.innerHTML='';
+        addRecRow();
+    });
 
-    addRowBtn.addEventListener('click', ()=> addRecRow());
-
-    function clearNewAudit(){
-      document.getElementById('auditNumber').value = '';
-      document.getElementById('auditName').value = '';
-      recTableBody.innerHTML = '';
-    }
-    clearNewAuditForm.addEventListener('click', clearNewAudit);
-
-    function applyStatusChange(rec, newStatus){
-      const today = todayYMD();
-      if(rec.status === newStatus) return;
-      if(rec.status === 'Closed' && newStatus !== 'Closed'){
-        rec.reopenCount = (rec.reopenCount || 0) + 1;
-        rec.closedAt = null;
-      }
-      if(newStatus === 'Closed'){
-        rec.closedAt = today;
-      }
-      rec.status = newStatus;
-      rec.lastStatusChangeAt = today;
-    }
-
-    function ensureDefaults(rec){
-      const today = todayYMD();
-      if(!rec.createdAt) rec.createdAt = today;
-      if(rec.reopenCount == null) rec.reopenCount = 0;
-      if(!rec.lastStatusChangeAt) rec.lastStatusChangeAt = rec.createdAt;
-      if(rec.managementResponse == null) rec.managementResponse = '';
-      if(rec.auditRecOwner == null) rec.auditRecOwner = '';
-      
-      // Workflow fields
-      if(rec.isPrepared == null) rec.isPrepared = false;
-      if(rec.preparedBy == null) rec.preparedBy = '';
-      if(rec.preparedAt == null) rec.preparedAt = '';
-      if(rec.isReviewed == null) rec.isReviewed = false;
-      if(rec.reviewedBy == null) rec.reviewedBy = '';
-      if(rec.reviewedAt == null) rec.reviewedAt = '';
-    }
-
-    saveAuditBtn.addEventListener('click', ()=>{
+    document.getElementById('saveAuditBtn').addEventListener('click', ()=>{
       const auditNumber = document.getElementById('auditNumber').value.trim();
       const auditName = document.getElementById('auditName').value.trim();
-      if(!auditNumber || !auditName){ alert('Please enter Audit Number and Audit Name.'); return; }
+      if(!auditNumber || !auditName){ alert('Audit Number and Name required.'); return; }
 
-      const mainRows = Array.from(recTableBody.querySelectorAll('tr.main-row'));
-      if(mainRows.length === 0){ if(!confirm('No recommendations added. Create audit with zero recommendations?')) return; }
+      const rows = Array.from(recTableBody.querySelectorAll('tr.main-row'));
+      if(rows.length === 0){ alert('Please add at least one recommendation.'); return; }
 
-      const today = todayYMD();
-      const recommendations = mainRows.map(row=>{
-        const descInput = row.querySelector('.basic-desc');
-        const ownerInput = row.querySelector('.basic-owner');
-        const auditOwnerInput = row.querySelector('.basic-audit-owner');
-        const dueInput = row.querySelector('.basic-due');
-        const statusSel = row.querySelector('.basic-status');
-        const riskSel = row.querySelector('.basic-risk');
-        const metaRow = row.nextElementSibling; // simplified check
-
-        let meta = {};
-        if(metaRow){
-          meta = {
+      const recommendations = rows.map(row => {
+         const desc = row.querySelector('.basic-desc').value.trim();
+         const owner = row.querySelector('.basic-owner').value;
+         const due = row.querySelector('.basic-due').value;
+         const risk = row.querySelector('.basic-risk').value;
+         const rootCat = row.querySelector('.basic-rootcat').value;
+         const metaRow = row.nextElementSibling;
+         
+         const meta = {
              title: metaRow.querySelector('.meta-title').value,
+             auditOwner: metaRow.querySelector('.meta-auditOwner').value,
              rootCause: metaRow.querySelector('.meta-rootCause').value,
-             likelihood: metaRow.querySelector('.meta-likelihood').value,
-             impact: metaRow.querySelector('.meta-impact').value,
-             managementResponse: metaRow.querySelector('.meta-mgmtResponse').value
-          };
-        }
+             mgmt: metaRow.querySelector('.meta-mgmtResponse').value,
+         };
 
-        const status = statusSel.value || 'Open';
-        const rec = {
-          id: uid(),
-          title: meta.title || '',
-          description: descInput.value.trim(),
-          owner: ownerInput.value.trim(),
-          auditRecOwner: auditOwnerInput.value.trim(),
-          dueDate: dueInput.value || null,
-          status,
-          createdAt: today,
-          closedAt: status === 'Closed' ? today : null,
-          lastStatusChangeAt: today,
-          reopenCount: 0,
-          riskRating: riskSel.value || '',
-          likelihood: meta.likelihood || '',
-          impact: meta.impact || '',
-          rootCause: meta.rootCause || '',
-          managementResponse: meta.managementResponse || ''
-        };
-        return rec;
-      }).filter(r=> r.description);
+         // Skip empty rows
+         if(!desc) return null;
 
-      const audit = { id: uid(), auditNumber, auditName, recommendations };
-      state.audits.push(audit);
+         return {
+             id: uid(),
+             title: meta.title || '',
+             description: desc,
+             owner: owner,
+             auditRecOwner: meta.auditOwner,
+             originalDueDate: due,
+             revisedDueDate: due,
+             status: 'Open',
+             riskRating: risk,
+             rootCauseCategory: rootCat,
+             rootCause: meta.rootCause,
+             managementResponse: meta.mgmt,
+             createdAt: todayYMD(),
+             isPrepared: false,
+             evidenceLink: '',
+             validationComment: ''
+         };
+      }).filter(r => r !== null);
+
+      if(recommendations.length === 0) return;
+
+      state.audits.push({ id:uid(), auditNumber, auditName, recommendations });
       save(state);
-      clearNewAudit();
-      populateExistingAuditSelect();
+      document.getElementById('clearNewAuditForm').click();
+      alert('Audit Saved Successfully!');
       refreshAll();
-      alert('Audit saved.');
     });
 
     // -----------------------
-    // Add to Existing Audit
-    // -----------------------
-    const existingAuditSelect = document.getElementById('existingAuditSelect');
-    const addToExistingBtn = document.getElementById('addToExistingBtn');
-
-    function populateExistingAuditSelect(){
-      const auditsSorted = [...state.audits].sort(sortAudit);
-      existingAuditSelect.innerHTML = auditsSorted.map(a=>`<option value="${a.id}">${a.auditNumber} — ${a.auditName}</option>`).join('');
-    }
-
-    addToExistingBtn.addEventListener('click', ()=>{
-      const aid = existingAuditSelect.value;
-      if(!aid){ alert('Please select an audit.'); return; }
-      const audit = state.audits.find(a=>a.id===aid);
-      if(!audit){ alert('Audit not found.'); return; }
-
-      const title = document.getElementById('newRecTitle').value.trim();
-      const description = document.getElementById('newRecDesc').value.trim();
-      const owner = document.getElementById('newRecOwner').value.trim();
-      const auditRecOwner = document.getElementById('newRecAuditOwner').value.trim();
-      const dueDate = document.getElementById('newRecDue').value;
-      const status = document.getElementById('newRecStatus').value;
-      const riskRating = document.getElementById('newRecRisk').value;
-      // ... grab other fields similarly ...
-
-      if(!title && !description){ alert('Please enter at least a Title or Description.'); return; }
-
-      const today = todayYMD();
-      const rec = {
-        id: uid(),
-        title, description, owner, auditRecOwner,
-        dueDate: dueDate || null,
-        status,
-        createdAt: today,
-        closedAt: status === 'Closed' ? today : null,
-        lastStatusChangeAt: today,
-        reopenCount: 0,
-        riskRating,
-        // ... simplified for this example ...
-      };
-
-      audit.recommendations.push(rec);
-      save(state);
-      document.getElementById('newRecTitle').value = '';
-      document.getElementById('newRecDesc').value = '';
-      refreshAll();
-      alert('Recommendation added.');
-    });
-
-    // -----------------------
-    // Helpers
-    // -----------------------
-    function sortAudit(a,b){
-      const an = a.auditNumber || ''; const bn = b.auditNumber || '';
-      return an.localeCompare(bn, undefined, { numeric: true, sensitivity: 'base' });
-    }
-    function niceDate(d){
-      if(!d) return '';
-      const [y,m,day] = d.split('-').map(x=>parseInt(x,10));
-      const dt = new Date(y, (m-1), day);
-      return dt.toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' });
-    }
-    function escapeHtml(s){
-      return String(s).replace(/[&<>\"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
-    }
-    function findAudit(aid){ return state.audits.find(a=>a.id===aid); }
-    function findRec(audit, rid){ return (audit.recommendations||[]).find(r=>r.id===rid); }
-
-    function parseYMD(d){
-      if(!d) return null;
-      const [y,m,day] = d.split('-').map(n=>parseInt(n,10));
-      return new Date(y, m-1, day);
-    }
-    function daysBetween(startYMD, endDate){
-      const s = parseYMD(startYMD);
-      if(!s) return null;
-      const t0 = new Date(s.getFullYear(), s.getMonth(), s.getDate());
-      const t1 = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-      return Math.floor((t1 - t0) / (1000*60*60*24));
-    }
-
-    function riskChip(risk){
-      if(!risk) return '';
-      const r = risk.toLowerCase();
-      let cls = 'risk-medium';
-      if(r === 'low') cls = 'risk-low';
-      else if(r === 'high') cls = 'risk-high';
-      else if(r === 'critical') cls = 'risk-critical';
-      return `<span class="risk-chip ${cls}">${escapeHtml(risk)}</span>`;
-    }
-
-    // -----------------------
-    // List + Search
+    // List & Edit Mode
     // -----------------------
     const listContainer = document.getElementById('listContainer');
-    const searchInput = document.getElementById('search');
-    const statusFilter = document.getElementById('statusFilter');
-    const ownerFilter = document.getElementById('ownerFilter');
-    const clearFilters = document.getElementById('clearFilters');
-
-    function populateOwnerFilter(){
-      const owners = new Set();
-      state.audits.forEach(a=>{
-        (a.recommendations||[]).forEach(r=>{
-          if(r.owner && r.owner.trim()) owners.add(r.owner.trim());
-        })
-      });
-      const current = ownerFilter.value;
-      const options = ['<option value="">All Process Owners</option>'];
-      Array.from(owners).sort().forEach(o=>{
-        const sel = (o === current) ? 'selected' : '';
-        options.push(`<option value="${escapeHtml(o)}" ${sel}>${escapeHtml(o)}</option>`);
-      });
-      ownerFilter.innerHTML = options.join('');
-    }
 
     function renderList(){
-      const q = (searchInput.value||'').toLowerCase();
-      const status = statusFilter.value;
-      const ownerSel = ownerFilter.value;
-      const audits = [...state.audits].sort(sortAudit);
+      const q = document.getElementById('search').value.toLowerCase();
+      const statusFilter = document.getElementById('statusFilter').value;
+      const ownerFilter = document.getElementById('ownerFilter').value;
+      
       listContainer.innerHTML = '';
+      
+      state.audits.forEach(audit => {
+         const visibleRecs = (audit.recommendations||[]).filter(r => {
+             const txt = `${audit.auditNumber} ${r.description} ${r.owner}`.toLowerCase();
+             const mQ = !q || txt.includes(q);
+             const mS = !statusFilter || r.status === statusFilter;
+             const mO = !ownerFilter || r.owner === ownerFilter;
+             return mQ && mS && mO;
+         });
+         
+         if(visibleRecs.length === 0) return;
 
-      audits.forEach(audit=>{
-        const filteredRecs = (audit.recommendations||[]).filter(r=>{
-          ensureDefaults(r);
-          const hay = `${audit.auditNumber} ${audit.auditName} ${r.title||''} ${r.description||''} ${r.owner||''} ${r.auditRecOwner||''}`.toLowerCase();
-          const matchQ = !q || hay.includes(q);
-          const matchS = !status || (r.status===status);
-          const matchO = !ownerSel || (r.owner === ownerSel);
-          return matchQ && matchS && matchO;
-        });
+         const card = document.createElement('div');
+         card.className = 'card audit-card';
+         card.innerHTML = `
+           <div class="audit-head">
+             <div><b>${audit.auditNumber}</b> <span class="muted" style="margin-left:10px">${audit.auditName}</span></div>
+           </div>
+           <div class="audit-body">
+             <div class="table-wrap">
+               <table class="table">
+                 <thead>
+                   <tr>
+                      <th style="width:35%">Description</th>
+                      <th style="width:15%">Owner</th>
+                      <th style="width:15%">Due (Revised)</th>
+                      <th style="width:10%">Status</th>
+                      <th style="width:10%">Risk</th>
+                      <th>Action</th>
+                   </tr>
+                 </thead>
+                 <tbody></tbody>
+               </table>
+             </div>
+           </div>
+         `;
+         const tbody = card.querySelector('tbody');
+         visibleRecs.forEach(r => {
+             const isSlipped = r.revisedDueDate && r.originalDueDate && r.revisedDueDate !== r.originalDueDate;
+             const dateDisplay = isSlipped 
+                ? `${niceDate(r.revisedDueDate)} <span class="slippage-warn">Extended (Orig: ${niceDate(r.originalDueDate)})</span>` 
+                : niceDate(r.originalDueDate);
 
-        if(q && filteredRecs.length===0 && ownerSel && filteredRecs.length===0) return;
-        if(!q && !ownerSel && status && filteredRecs.length===0) return;
-
-        const card = document.createElement('div');
-        card.className = 'card audit-card';
-        card.innerHTML = `
-          <div class="audit-head">
-            <div>
-              <div style="font-weight:700">${audit.auditNumber}</div>
-              <div class="muted">${audit.auditName}</div>
-            </div>
-            <div class="muted">${filteredRecs.length} recommendation(s)</div>
-          </div>
-          <div class="audit-body">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th style="width:16%">Title</th>
-                  <th style="width:24%">Description</th>
-                  <th style="width:14%">Process Owner</th>
-                  <th style="width:14%">Audit Rec Owner</th>
-                  <th style="width:10%">Due</th>
-                  <th style="width:10%">Status</th>
-                  <th style="width:6%">Risk</th>
-                  <th style="width:6%"></th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        `;
-        const tbody = card.querySelector('tbody');
-        filteredRecs.forEach(r=>{
-          const tr = document.createElement('tr');
-          tr.dataset.auditId = audit.id; tr.dataset.recId = r.id;
-          tr.innerHTML = `
-            <td class="title">${escapeHtml(r.title||'')}</td>
-            <td class="desc">${escapeHtml(r.description||'')}</td>
-            <td class="owner ownerCell">${escapeHtml(r.owner||'')}</td>
-            <td class="auditOwner ownerCell">${escapeHtml(r.auditRecOwner||'')}</td>
-            <td class="due dueCell">${r.dueDate ? niceDate(r.dueDate) : '<span class="muted">—</span>'}</td>
-            <td class="statusCell ownerCell">
-              <select class="status-inline">
-                <option ${r.status==='Open'?'selected':''}>Open</option>
-                <option ${r.status==='In Progress'?'selected':''}>In Progress</option>
-                <option ${r.status==='Closed'?'selected':''}>Closed</option>
-              </select>
-            </td>
-            <td class="riskCell">${riskChip(r.riskRating || '')}</td>
-            <td style="text-align:right; white-space:nowrap">
-              <button class="btn editBtn" title="Details / Workflow" type="button">Edit</button>
-            </td>
-          `;
-          
-          tr.querySelector('.status-inline').addEventListener('change', (e)=>{
-             const newStatus = e.target.value;
-             const rec = findRec(audit, r.id);
-             if(!rec) return;
-             ensureDefaults(rec);
-             applyStatusChange(rec, newStatus);
-             save(state); refreshAll();
-          });
-
-          tr.querySelector('.editBtn').addEventListener('click', ()=>{
-             enterEditMode(tr, audit.id, r.id);
-          });
-          
-          tbody.appendChild(tr);
-        });
-        listContainer.appendChild(card);
+             const tr = document.createElement('tr');
+             tr.innerHTML = `
+               <td>
+                 ${r.title ? '<div style="font-weight:700;margin-bottom:4px">'+r.title+'</div>' : ''}
+                 <div style="color:#4b5563">${r.description}</div>
+               </td>
+               <td>${r.owner}</td>
+               <td>${dateDisplay}</td>
+               <td><span class="status status-${(r.status||'').replace(' ','')}">${r.status}</span></td>
+               <td><span class="risk-chip risk-${(r.riskRating||'').toLowerCase()}">${r.riskRating||'-'}</span></td>
+               <td style="text-align:right"><button class="btn editBtn">Work Item</button></td>
+             `;
+             tr.querySelector('.editBtn').addEventListener('click', ()=>enterEditMode(tr, audit.id, r.id));
+             tbody.appendChild(tr);
+         });
+         listContainer.appendChild(card);
       });
     }
 
     function enterEditMode(tr, aid, rid){
-       const audit = findAudit(aid); const rec = findRec(audit, rid);
-       if(!rec) return;
-       ensureDefaults(rec);
+       const audit = state.audits.find(a=>a.id===aid);
+       const rec = audit.recommendations.find(r=>r.id===rid);
        
-       // Close other edit rows if desired, but here we just toggle/insert
-       let existingMeta = tr.nextElementSibling;
-       if(existingMeta && existingMeta.classList.contains('meta-edit-row')){
-         existingMeta.remove();
-         return; 
-       }
+       const old = document.querySelector('.meta-edit-row');
+       if(old) old.remove();
 
-       // Create Editing Interface
-       const metaRow = document.createElement('tr');
-       metaRow.className = 'meta-edit-row';
+       const editRow = document.createElement('tr');
+       editRow.className = 'meta-edit-row';
        
-       // Workflow UI Logic
-       let workflowHTML = '';
+       // Workflow UI
+       let wfHtml = '';
        if(!rec.isPrepared){
-         workflowHTML = `
-           <div class="workflow-box">
-             <div class="workflow-status-line">Status: <span style="color:var(--muted)">Not Prepared</span></div>
-             <div class="workflow-actions">
-               <button class="btn good prepareBtn">Mark Prepared</button>
-             </div>
-             <div class="muted" style="font-size:12px; margin-top:6px">Must be prepared by <strong>${escapeHtml(rec.auditRecOwner||'Audit Rec. Owner')}</strong></div>
-           </div>
-         `;
+          wfHtml = `<div class="workflow-box">
+             <div class="workflow-status-line">Status: Not Prepared</div>
+             <button class="btn good prepareBtn">Mark Prepared (Ready for Review)</button>
+             <div class="stamp">Recommendation is open for work.</div>
+          </div>`;
        } else if(rec.isPrepared && !rec.isReviewed){
-         workflowHTML = `
-           <div class="workflow-box" style="border-left-color:var(--warn)">
-             <div class="workflow-status-line">Status: <span style="color:var(--warn)">Ready for Review</span></div>
-             <div class="stamp">Prepared by ${escapeHtml(rec.preparedBy)} on ${rec.preparedAt}</div>
-             <div class="workflow-actions" style="margin-top:8px">
-               <button class="btn good reviewBtn">Mark Reviewed</button>
-               <button class="btn bad rejectBtn">Reject / Fixes Needed</button>
+          wfHtml = `<div class="workflow-box" style="border-left-color:var(--warn)">
+             <div class="workflow-status-line" style="color:var(--warn)">Status: Ready for Review</div>
+             <div class="stamp">Prepared by ${rec.preparedBy||'Auditor'}</div>
+             <div class="workflow-actions">
+                <button class="btn good reviewBtn">Mark Reviewed & Approved</button>
+                <button class="btn bad rejectBtn">Reject / Return</button>
              </div>
-           </div>
-         `;
-       } else if(rec.isReviewed){
-         workflowHTML = `
-           <div class="workflow-box" style="border-left-color:var(--good)">
-             <div class="workflow-status-line">Status: <span style="color:var(--good)">Reviewed & Approved</span></div>
-             <div class="stamp">Prepared by ${escapeHtml(rec.preparedBy)} on ${rec.preparedAt}</div>
-             <div class="stamp">Reviewed by ${escapeHtml(rec.reviewedBy)} on ${rec.reviewedAt}</div>
-             <div class="workflow-actions" style="margin-top:8px">
-               <button class="btn bad rejectBtn">Reject / Re-Open</button>
+          </div>`;
+       } else {
+          wfHtml = `<div class="workflow-box" style="border-left-color:var(--good)">
+             <div class="workflow-status-line" style="color:var(--good)">Approved</div>
+             <div class="stamp">Reviewed by ${rec.reviewedBy}</div>
+             <div class="workflow-actions">
+                <button class="btn bad rejectBtn">Re-open / Reject</button>
              </div>
-           </div>
-         `;
+          </div>`;
        }
 
-       metaRow.innerHTML = `
-         <td colspan="8">
-           <div class="grid">
-             <div class="span-12">
-               <h4 style="margin:0 0 8px">Audit Validation Workflow</h4>
-               ${workflowHTML}
-             </div>
-             
-             <div class="span-12"><h4 style="margin:8px 0">Edit Details</h4></div>
-             <div class="span-6">
-                <div class="field"><label>Process Owner</label><input class="edit-owner" value="${escapeHtml(rec.owner||'')}" /></div>
-             </div>
-             <div class="span-6">
-                <div class="field"><label>Audit Rec. Owner</label><input class="edit-auditOwner" value="${escapeHtml(rec.auditRecOwner||'')}" /></div>
-             </div>
-             <div class="span-12">
-               <div class="field"><label>Recommendation Description</label><textarea class="edit-desc">${escapeHtml(rec.description||'')}</textarea></div>
-             </div>
-             <div class="span-12">
-               <div class="field"><label>Management Response</label><textarea class="edit-mgmt">${escapeHtml(rec.managementResponse||'')}</textarea></div>
-             </div>
-             
-             <div class="span-12" style="margin-top:10px">
-               <button class="btn primary saveBtn">Save Changes</button>
-               <button class="btn bad deleteBtn" style="float:right">Delete Rec</button>
-             </div>
+       editRow.innerHTML = `
+         <td colspan="6" style="padding:0">
+           <div class="grid" style="padding:24px; background:#f9fafb; border-bottom:1px solid #e5e7eb;">
+              <div class="span-12">${wfHtml}</div>
+              
+              <div class="span-12"><h4 style="margin:0 0 16px; border-bottom:1px solid #ddd; padding-bottom:8px">Edit Details</h4></div>
+              
+              <div class="span-6">
+                 <div class="field"><label>Status</label>
+                   <select id="editStatus">
+                     <option ${rec.status==='Open'?'selected':''}>Open</option>
+                     <option ${rec.status==='In Progress'?'selected':''}>In Progress</option>
+                     <option ${rec.status==='Closed'?'selected':''}>Closed</option>
+                   </select>
+                 </div>
+              </div>
+              <div class="span-6">
+                 <div class="field"><label>Root Cause Category</label>
+                   <select id="editRootCat">
+                     <option value="">(Select)</option>
+                     <option value="People" ${rec.rootCauseCategory==='People'?'selected':''}>People</option>
+                     <option value="Process" ${rec.rootCauseCategory==='Process'?'selected':''}>Process</option>
+                     <option value="Technology" ${rec.rootCauseCategory==='Technology'?'selected':''}>Technology</option>
+                     <option value="External" ${rec.rootCauseCategory==='External'?'selected':''}>External</option>
+                   </select>
+                 </div>
+              </div>
+
+              <div class="span-6">
+                 <div class="field"><label>Original Due Date (Locked)</label><input disabled value="${rec.originalDueDate||''}" style="background:#eee; color:#666"></div>
+              </div>
+              <div class="span-6">
+                 <div class="field"><label>Revised Due Date (Change for Extension)</label><input type="date" id="editRevised" value="${rec.revisedDueDate||rec.originalDueDate||''}"></div>
+              </div>
+              
+              <div class="span-12">
+                 <div class="field"><label>Description</label><textarea id="editDesc" rows="2">${rec.description||''}</textarea></div>
+              </div>
+
+              <div class="span-12">
+                 <div class="field"><label>Evidence Link (SharePoint/Drive)</label><input id="editEvidence" value="${rec.evidenceLink||''}" placeholder="https://..."></div>
+              </div>
+
+              <div class="span-12">
+                 <div class="field"><label>Validation Comment (Required to Close)</label><textarea id="editValidCom" placeholder="Describe what you tested to close this..." rows="2">${rec.validationComment||''}</textarea></div>
+              </div>
+
+              <div class="span-12" style="text-align:right; margin-top:10px;">
+                 <button class="btn primary saveEditBtn" style="padding:12px 24px;">Save Changes</button>
+              </div>
            </div>
          </td>
        `;
+
+       tr.after(editRow);
        
-       tr.parentNode.insertBefore(metaRow, tr.nextSibling);
-       
-       // Bind Workflow Events
-       const prepareBtn = metaRow.querySelector('.prepareBtn');
-       if(prepareBtn){
-         prepareBtn.addEventListener('click', ()=>{
-           if(!rec.auditRecOwner){
-             alert('Please define an "Audit Rec. Owner" before preparing.');
-             return;
-           }
-           rec.isPrepared = true;
-           rec.preparedBy = rec.auditRecOwner;
-           rec.preparedAt = todayYMD();
-           save(state); refreshAll();
-         });
-       }
+       // Attach auto-grow to edit fields
+       attachAutoGrow(editRow.querySelector('#editDesc'));
+       attachAutoGrow(editRow.querySelector('#editValidCom'));
 
-       const reviewBtn = metaRow.querySelector('.reviewBtn');
-       if(reviewBtn){
-         reviewBtn.addEventListener('click', ()=>{
-           const reviewer = prompt("Enter Name of Reviewer:");
-           if(reviewer){
-             rec.isReviewed = true;
-             rec.reviewedBy = reviewer;
-             rec.reviewedAt = todayYMD();
-             save(state); refreshAll();
-           }
-         });
-       }
-
-       const rejectBtn = metaRow.querySelector('.rejectBtn');
-       if(rejectBtn){
-         rejectBtn.addEventListener('click', ()=>{
-           if(confirm('Rejecting will un-prepare this recommendation. Continue?')){
-             rec.isPrepared = false;
-             rec.preparedBy = '';
-             rec.preparedAt = '';
-             rec.isReviewed = false;
-             rec.reviewedBy = '';
-             rec.reviewedAt = '';
-             save(state); refreshAll();
-           }
-         });
-       }
-
-       // Bind Save/Delete
-       metaRow.querySelector('.saveBtn').addEventListener('click', ()=>{
-         rec.owner = metaRow.querySelector('.edit-owner').value;
-         rec.auditRecOwner = metaRow.querySelector('.edit-auditOwner').value;
-         rec.description = metaRow.querySelector('.edit-desc').value;
-         rec.managementResponse = metaRow.querySelector('.edit-mgmt').value;
-         save(state); refreshAll();
+       // Bindings
+       editRow.querySelector('.prepareBtn')?.addEventListener('click', ()=>{
+           rec.isPrepared = true; rec.preparedBy = 'Current User'; save(state); refreshAll();
        });
-       
-       metaRow.querySelector('.deleteBtn').addEventListener('click', ()=>{
-          if(confirm('Delete this recommendation?')){
-            const a = findAudit(aid);
-            a.recommendations = a.recommendations.filter(x=>x.id!==rid);
-            save(state); refreshAll();
-          }
+       editRow.querySelector('.reviewBtn')?.addEventListener('click', ()=>{
+           rec.isReviewed = true; rec.reviewedBy = 'Manager'; save(state); refreshAll();
+       });
+       editRow.querySelector('.rejectBtn')?.addEventListener('click', ()=>{
+           rec.isPrepared = false; save(state); refreshAll();
+       });
+
+       editRow.querySelector('.saveEditBtn').addEventListener('click', ()=>{
+           const stat = document.getElementById('editStatus').value;
+           const validCom = document.getElementById('editValidCom').value.trim();
+           
+           if(stat === 'Closed' && validCom.length < 5){
+               alert('Error: You must provide a Validation Comment to close a recommendation.');
+               document.getElementById('editValidCom').classList.add('validation-required');
+               return;
+           }
+
+           rec.status = stat;
+           rec.rootCauseCategory = document.getElementById('editRootCat').value;
+           rec.revisedDueDate = document.getElementById('editRevised').value;
+           rec.evidenceLink = document.getElementById('editEvidence').value;
+           rec.validationComment = validCom;
+           rec.description = document.getElementById('editDesc').value;
+           
+           save(state);
+           alert('Changes Saved');
+           refreshAll();
        });
     }
 
-    searchInput.addEventListener('input', renderList);
-    statusFilter.addEventListener('change', renderList);
-    ownerFilter.addEventListener('change', renderList);
-    clearFilters.addEventListener('click', ()=>{
-      searchInput.value=''; statusFilter.value=''; ownerFilter.value='';
-      renderList();
+    // -----------------------
+    // Dashboard & Init
+    // -----------------------
+    function renderDashboard(){
+        let total=0, overdue=0, dueSoon=0;
+        const queueTable = document.querySelector('#validationQueueTable tbody');
+        queueTable.innerHTML = '';
+
+        state.audits.forEach(a=>{
+            (a.recommendations||[]).forEach(r=>{
+                total++;
+                const due = r.revisedDueDate || r.originalDueDate;
+                if(r.status !== 'Closed' && due){
+                    const diff = (new Date(due) - new Date()) / (1000*60*60*24);
+                    if(diff < 0) overdue++;
+                    else if(diff < 7) dueSoon++;
+                }
+                if(r.isPrepared && !r.isReviewed){
+                    queueTable.innerHTML += `<tr><td>${a.auditNumber}</td><td>${r.title||'Rec'}</td><td>${r.preparedBy}</td></tr>`;
+                }
+            })
+        });
+        
+        document.getElementById('kpiTotal').textContent = total;
+        document.getElementById('kpiOverdue').textContent = overdue;
+        document.getElementById('kpiDueSoon').textContent = dueSoon;
+
+        const ctx = document.getElementById('barChart');
+        if(window.myChart) window.myChart.destroy();
+        
+        // Calculate risks
+        const risks = { Low:0, Medium:0, High:0, Critical:0 };
+        state.audits.forEach(a=>a.recommendations.forEach(r=>{
+            if(r.status!=='Closed' && r.riskRating && risks[r.riskRating]!==undefined) risks[r.riskRating]++;
+        }));
+
+        window.myChart = new Chart(ctx, {
+            type:'bar',
+            data:{ 
+                labels:['Low','Medium','High','Critical'], 
+                datasets:[{
+                    label:'Open Findings by Risk', 
+                    data:[risks.Low, risks.Medium, risks.High, risks.Critical], 
+                    backgroundColor:['#10b981','#f59e0b','#ef4444','#1f2937'],
+                    borderRadius: 6
+                }] 
+            },
+            options:{ maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, ticks:{stepSize:1}}} }
+        });
+    }
+
+    function refreshAll(){
+        renderDashboard();
+        renderList();
+        const owners = new Set();
+        state.audits.forEach(a=>a.recommendations.forEach(r=>owners.add(r.owner)));
+        const sel = document.getElementById('ownerFilter');
+        sel.innerHTML = '<option value="">All Process Owners</option>' + Array.from(owners).map(o=>`<option>${o}</option>`).join('');
+    }
+    
+    document.getElementById('search').addEventListener('input', renderList);
+    document.getElementById('statusFilter').addEventListener('change', renderList);
+    document.getElementById('ownerFilter').addEventListener('change', renderList);
+    document.getElementById('clearFilters').addEventListener('click', ()=>{
+        document.getElementById('search').value='';
+        document.getElementById('statusFilter').value='';
+        document.getElementById('ownerFilter').value='';
+        renderList();
     });
 
-    // -----------------------
-    // Dashboard KPIs (Simplified for brevity of update, reuse existing logic)
-    // -----------------------
-    const kpiDueSoon = document.getElementById('kpiDueSoon');
-    const kpiOverdue = document.getElementById('kpiOverdue');
-    const kpiTotal = document.getElementById('kpiTotal');
-    const kpiOnTime = document.getElementById('kpiOnTime');
-    const kpiAvgAge = document.getElementById('kpiAvgAge');
-    const kpiReopened = document.getElementById('kpiReopened');
-    
-    // ... [Chart logic remains largely same as original, just re-init] ...
-    let barChart;
+    if(state.audits.length === 0) addRecRow();
+    else refreshAll();
 
-    function renderDashboard(){
-      const rows = [];
-      state.audits.forEach(a=>(a.recommendations||[]).forEach(r=>{ ensureDefaults(r); rows.push({audit:a, rec:r}); }));
-      
-      const total = rows.length;
-      kpiTotal.textContent = total;
-      // ... (Rest of KPI logic is preserved from original) ...
-      // For brevity in this answer, we assume the original KPI calculations 
-      // are functioning. The crucial updates were in the structure/logic above.
-    }
-    
-    // Initial Seed
-    if(state.audits.length === 0){
-        const today = todayYMD();
-        state.audits.push({
-            id: uid(), auditNumber:'2025-001', auditName:'Demo Audit',
-            recommendations: [{
-                id: uid(), title:'Demo Rec', description:'Fix the spacing',
-                owner:'Process Owner A', auditRecOwner:'Auditor Bob',
-                dueDate: today, status:'Open', createdAt:today, lastStatusChangeAt:today,
-                isPrepared:false
-            }]
-        });
-        save(state);
-    }
-
-    // Init
-    populateExistingAuditSelect();
-    populateOwnerFilter();
-    refreshAll();
   </script>
 </body>
 </html>
